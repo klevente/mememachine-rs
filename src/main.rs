@@ -32,6 +32,9 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
+        if msg.content.is_empty() {
+            return;
+        }
         let (prefix, message) = msg.content.split_at(1);
         if !prefix.starts_with(PREFIX) {
             return;
@@ -137,7 +140,8 @@ struct EndEventHandler {
 
 #[async_trait]
 impl VoiceEventHandler for EndEventHandler {
-    async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
+    async fn act(&self, _: &EventContext<'_>) -> Option<Event> {
+        println!("Finished playing sound, disconnecting");
         let has_handler = self.manager.get(self.guild_id).is_some();
 
         if has_handler {
