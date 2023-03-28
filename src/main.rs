@@ -6,8 +6,7 @@ use serenity::{
 };
 use songbird::SerenityInit;
 
-use crate::handler::Handler;
-use crate::util::get_sound_files;
+use crate::{handler::Handler, util::get_sound_files};
 
 mod commands;
 mod handler;

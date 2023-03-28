@@ -1,19 +1,12 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 
-use crate::handler::EndEventHandler;
-use crate::util::check_msg;
-use crate::{ConfigStore, SoundStore};
+use crate::{handler::EndEventHandler, util::check_msg, ConfigStore, SoundStore};
 use rand::Rng;
-use serenity::{
-    async_trait,
-    client::{Context, EventHandler},
-    model::{channel::Message, gateway::Ready, id::GuildId},
-};
-use songbird::typemap::TypeMapKey;
+use serenity::{client::Context, model::channel::Message};
+
 use songbird::{
     input::{self},
-    Event, EventContext, EventHandler as VoiceEventHandler, Songbird, TrackEvent,
+    Event, TrackEvent,
 };
 
 const PREFIX: char = '%';
@@ -58,7 +51,7 @@ pub async fn random_command(ctx: Context, msg: Message) {
     play_sound(ctx, msg, &file_name).await;
 }
 
-pub async fn help_command(ctx: Context, msg: Message) {}
+pub async fn help_command(_ctx: Context, _msg: Message) {}
 
 async fn play_sound(ctx: Context, msg: Message, file_name: &str) {
     let sound_store = ctx
