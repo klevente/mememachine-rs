@@ -1,16 +1,14 @@
-use std::io::ErrorKind;
-use std::path::PathBuf;
-
-use crate::{handler::EndEventHandler, util::check_msg, ConfigStore, SoundStore};
+use crate::{
+    handler::EndEventHandler, util::check_msg, util::sync_sound_files_with_fs, ConfigStore,
+    SoundStore,
+};
 use rand::Rng;
 use serenity::{client::Context, model::channel::Message};
-
-use crate::util::sync_sound_files_with_fs;
-use songbird::input::error::Error;
 use songbird::{
     input::{self},
     Event, TrackEvent,
 };
+use std::path::PathBuf;
 
 pub async fn sound_command(ctx: Context, msg: Message) {
     let (_, file_name) = msg.content.split_at(1);

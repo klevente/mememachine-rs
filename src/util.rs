@@ -1,6 +1,6 @@
 use serenity::{model::channel::Message, Result as SerenityResult};
 use sorted_vec::SortedSet;
-use std::{collections::BTreeSet, path::Path};
+use std::{path::Path};
 
 /// Checks that a message successfully sent; if not, then logs why to stdout.
 pub fn check_msg(result: SerenityResult<Message>) {

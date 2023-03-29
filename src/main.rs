@@ -1,13 +1,11 @@
-use std::{collections::BTreeSet, env, sync::Arc};
-
+use crate::{handler::Handler, util::load_all_sound_files};
 use serenity::{
     client::Client,
     prelude::{GatewayIntents, Mutex, *},
 };
 use songbird::SerenityInit;
-use sorted_vec::{SortedSet, SortedVec};
-
-use crate::{handler::Handler, util::load_all_sound_files};
+use sorted_vec::SortedSet;
+use std::{env, sync::Arc};
 
 mod commands;
 mod handler;

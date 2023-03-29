@@ -1,19 +1,11 @@
-use std::borrow::Borrow;
-use std::sync::Arc;
-
-use rand::Rng;
+use crate::commands::{help_command, random_command, sound_command};
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
     model::{channel::Message, gateway::Ready, id::GuildId},
 };
-use songbird::{
-    input::{self},
-    Event, EventContext, EventHandler as VoiceEventHandler, Songbird, TrackEvent,
-};
-
-use crate::commands::{help_command, random_command, sound_command};
-use crate::{util::check_msg, SoundStore};
+use songbird::{Event, EventContext, EventHandler as VoiceEventHandler, Songbird};
+use std::sync::Arc;
 
 const PREFIX: char = '%';
 
