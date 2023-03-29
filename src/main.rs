@@ -5,8 +5,9 @@ use serenity::{
     prelude::{GatewayIntents, Mutex, *},
 };
 use songbird::SerenityInit;
+use sorted_vec::{SortedSet, SortedVec};
 
-use crate::{handler::Handler, util::get_sound_files};
+use crate::{handler::Handler, util::load_all_sound_files};
 
 mod commands;
 mod handler;
@@ -15,7 +16,7 @@ mod util;
 pub struct SoundStore;
 
 impl TypeMapKey for SoundStore {
-    type Value = Arc<Mutex<BTreeSet<String>>>;
+    type Value = Arc<Mutex<SortedSet<String>>>;
 }
 
 pub struct ConfigStore;
@@ -37,7 +38,7 @@ async fn init_sounds(client: &Client) {
     let mut data = client.data.write().await;
 
     let cfg = data.get::<ConfigStore>().cloned().expect("Should be here");
-    let files = get_sound_files(&cfg.sounds_path);
+    let files = load_all_sound_files(&cfg.sounds_path);
 
     data.insert::<SoundStore>(Arc::new(Mutex::new(files)));
 }
@@ -53,7 +54,6 @@ async fn main() {
 
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
-        // .framework(framework)
         .register_songbird()
         .await
         .expect("Error creating client");

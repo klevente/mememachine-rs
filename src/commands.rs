@@ -1,31 +1,16 @@
+use std::io::ErrorKind;
 use std::path::PathBuf;
 
 use crate::{handler::EndEventHandler, util::check_msg, ConfigStore, SoundStore};
 use rand::Rng;
 use serenity::{client::Context, model::channel::Message};
 
+use crate::util::sync_sound_files_with_fs;
+use songbird::input::error::Error;
 use songbird::{
     input::{self},
     Event, TrackEvent,
 };
-
-const PREFIX: char = '%';
-
-pub async fn handle_message(ctx: Context, msg: Message) {
-    if msg.content.len() < 2 {
-        return;
-    }
-    let (prefix, message) = msg.content.split_at(1);
-    if !prefix.starts_with(PREFIX) {
-        return;
-    }
-
-    match message {
-        "list" | "help" => help_command(ctx, msg).await,
-        "random" => random_command(ctx, msg).await,
-        _ => sound_command(ctx, msg).await,
-    }
-}
 
 pub async fn sound_command(ctx: Context, msg: Message) {
     let (_, file_name) = msg.content.split_at(1);
@@ -45,7 +30,7 @@ pub async fn random_command(ctx: Context, msg: Message) {
         let files = sound_store.lock().await;
         let mut rng = rand::thread_rng();
         let idx = rng.gen_range(0..files.len());
-        files.iter().nth(idx).unwrap().clone()
+        files[idx].clone()
     };
     println!("Random, chosen file is {file_name}");
     play_sound(ctx, msg, &file_name).await;
@@ -53,7 +38,7 @@ pub async fn random_command(ctx: Context, msg: Message) {
 
 pub async fn help_command(_ctx: Context, _msg: Message) {}
 
-async fn play_sound(ctx: Context, msg: Message, file_name: &str) {
+async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
     let sound_store = ctx
         .data
         .read()
@@ -71,14 +56,34 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &str) {
         .expect("Should be here");
     let sounds_path = &config.sounds_path;
 
-    let files = sound_store.lock().await;
-
-    if !files.contains(file_name) {
-        check_msg(msg.reply(ctx, format!("Unknown sound: {file_name}")).await);
-        return;
+    let mut files = sound_store.lock().await;
+    if files.binary_search(&file_name).is_err() {
+        sync_sound_files_with_fs(sounds_path, &mut files);
+        if files.binary_search(&file_name).is_err() {
+            check_msg(msg.reply(ctx, format!("Unknown sound: {file_name}")).await);
+            return;
+        }
     }
 
     let file_path = PathBuf::from(sounds_path).join(format!("{file_name}.mp3"));
+
+    if !file_path.exists() {
+        check_msg(msg.reply(ctx, format!("Unknown sound: {file_name}")).await);
+        sync_sound_files_with_fs(sounds_path, &mut files);
+        return;
+    }
+
+    let sound_file = match input::ffmpeg(&file_path).await {
+        Ok(sound_file) => sound_file,
+        Err(e) => {
+            println!("Unexpected error occurred: {e}");
+            check_msg(
+                msg.reply(ctx, format!("Unexpected error occurred: {e}"))
+                    .await,
+            );
+            return;
+        }
+    };
 
     let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
@@ -124,9 +129,6 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &str) {
 
     let mut handler = handler_lock.lock().await;
 
-    let sound_file = input::ffmpeg(&file_path)
-        .await
-        .expect("Could not load sound file");
     let sound = handler.play_source(sound_file);
     let _ = sound.set_volume(1.0);
 
