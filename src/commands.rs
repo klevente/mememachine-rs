@@ -10,6 +10,8 @@ use songbird::{
 };
 use std::path::PathBuf;
 
+const MAX_MSG_LEN: usize = 2000;
+
 pub async fn sound_command(ctx: Context, msg: Message) {
     let (_, file_name) = msg.content.split_at(1);
     let file_name = file_name.to_owned();
@@ -34,7 +36,42 @@ pub async fn random_command(ctx: Context, msg: Message) {
     play_sound(ctx, msg, &file_name).await;
 }
 
-pub async fn help_command(_ctx: Context, _msg: Message) {}
+pub async fn help_command(ctx: Context, msg: Message) {
+    let sound_store = ctx
+        .data
+        .read()
+        .await
+        .get::<SoundStore>()
+        .cloned()
+        .expect("Should be here");
+
+    let config = ctx
+        .data
+        .read()
+        .await
+        .get::<ConfigStore>()
+        .cloned()
+        .expect("Should be here");
+    let sounds_path = &config.sounds_path;
+
+    let mut files = sound_store.lock().await;
+    sync_sound_files_with_fs(sounds_path, &mut files);
+
+    let mut messages = vec!["".to_string()];
+
+    for file in files.iter() {
+        if messages.last().unwrap().len() + file.len() > MAX_MSG_LEN {
+            messages.push("".to_string());
+        }
+        let last = messages.last_mut().unwrap();
+        last.push_str(file);
+        last.push('\n');
+    }
+
+    for content in messages {
+        check_msg(msg.channel_id.say(&ctx.http, content).await);
+    }
+}
 
 async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
     let sound_store = ctx
