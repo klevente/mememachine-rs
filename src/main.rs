@@ -34,7 +34,10 @@ async fn main() {
 
     let sounds_path = PathBuf::from(sounds_path);
     if !sounds_path.exists() || !sounds_path.is_dir() {
-        tracing::error!("{} is not a valid directory!", sounds_path.display());
+        tracing::error!(
+            "{} is not a valid directory, aborting...",
+            sounds_path.display()
+        );
         return;
     }
 
