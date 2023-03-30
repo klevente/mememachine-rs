@@ -52,17 +52,9 @@ impl VoiceEventHandler for EndEventHandler {
         let has_handler = self.manager.get(self.guild_id).is_some();
 
         if has_handler {
-            if let Err(_e) = self.manager.remove(self.guild_id).await {
-                /*check_msg(
-                    msg.channel_id
-                        .say(&ctx.http, format!("Failed: {:?}", e))
-                        .await,
-                );*/
+            if let Err(e) = self.manager.remove(self.guild_id).await {
+                println!("Unexpected error occurred while trying to leave voice channel: {e}")
             }
-
-            // check_msg(msg.channel_id.say(&ctx.http, "Left voice channel").await);
-        } else {
-            // check_msg(msg.reply(ctx, "Not in a voice channel").await);
         }
 
         None

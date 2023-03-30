@@ -24,8 +24,8 @@ pub async fn random_command(ctx: Context, msg: Message) {
             .get::<ConfigStore>()
             .cloned()
             .expect("Should be here");
-        let sounds_path = &config.sounds_path;
-        let files = get_sounds(sounds_path).unwrap();
+
+        let files = get_sounds(&config.sounds_path).unwrap();
         let mut rng = rand::thread_rng();
         let idx = rng.gen_range(0..files.len());
         files[idx].clone()
@@ -42,9 +42,8 @@ pub async fn help_command(ctx: Context, msg: Message) {
         .get::<ConfigStore>()
         .cloned()
         .expect("Should be here");
-    let sounds_path = &config.sounds_path;
 
-    let files = get_sounds(sounds_path).unwrap();
+    let files = get_sounds(&config.sounds_path).unwrap();
 
     let mut messages = vec!["".to_string()];
 
@@ -70,9 +69,8 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
         .get::<ConfigStore>()
         .cloned()
         .expect("Should be here");
-    let sounds_path = &config.sounds_path;
 
-    let file_path = PathBuf::from(sounds_path).join(format!("{file_name}.mp3"));
+    let file_path = PathBuf::from(&config.sounds_path).join(format!("{file_name}.mp3"));
 
     if !file_path.exists() {
         check_msg(msg.reply(ctx, format!("Unknown sound: {file_name}")).await);
