@@ -1,7 +1,4 @@
-use crate::{
-    handler::EndEventHandler, util::check_msg, util::sync_sound_files_with_fs, ConfigStore,
-    SoundStore,
-};
+use crate::{handler::EndEventHandler, util::check_msg, util::get_sounds, ConfigStore};
 use rand::Rng;
 use serenity::{client::Context, model::channel::Message};
 use songbird::{
@@ -20,14 +17,15 @@ pub async fn sound_command(ctx: Context, msg: Message) {
 
 pub async fn random_command(ctx: Context, msg: Message) {
     let file_name = {
-        let sound_store = ctx
+        let config = ctx
             .data
             .read()
             .await
-            .get::<SoundStore>()
+            .get::<ConfigStore>()
             .cloned()
             .expect("Should be here");
-        let files = sound_store.lock().await;
+        let sounds_path = &config.sounds_path;
+        let files = get_sounds(sounds_path).unwrap();
         let mut rng = rand::thread_rng();
         let idx = rng.gen_range(0..files.len());
         files[idx].clone()
@@ -37,14 +35,6 @@ pub async fn random_command(ctx: Context, msg: Message) {
 }
 
 pub async fn help_command(ctx: Context, msg: Message) {
-    let sound_store = ctx
-        .data
-        .read()
-        .await
-        .get::<SoundStore>()
-        .cloned()
-        .expect("Should be here");
-
     let config = ctx
         .data
         .read()
@@ -54,8 +44,7 @@ pub async fn help_command(ctx: Context, msg: Message) {
         .expect("Should be here");
     let sounds_path = &config.sounds_path;
 
-    let mut files = sound_store.lock().await;
-    sync_sound_files_with_fs(sounds_path, &mut files);
+    let files = get_sounds(sounds_path).unwrap();
 
     let mut messages = vec!["".to_string()];
 
@@ -74,14 +63,6 @@ pub async fn help_command(ctx: Context, msg: Message) {
 }
 
 async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
-    let sound_store = ctx
-        .data
-        .read()
-        .await
-        .get::<SoundStore>()
-        .cloned()
-        .expect("Should be here");
-
     let config = ctx
         .data
         .read()
@@ -91,20 +72,10 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
         .expect("Should be here");
     let sounds_path = &config.sounds_path;
 
-    let mut files = sound_store.lock().await;
-    if files.binary_search(&file_name).is_err() {
-        sync_sound_files_with_fs(sounds_path, &mut files);
-        if files.binary_search(&file_name).is_err() {
-            check_msg(msg.reply(ctx, format!("Unknown sound: {file_name}")).await);
-            return;
-        }
-    }
-
     let file_path = PathBuf::from(sounds_path).join(format!("{file_name}.mp3"));
 
     if !file_path.exists() {
         check_msg(msg.reply(ctx, format!("Unknown sound: {file_name}")).await);
-        sync_sound_files_with_fs(sounds_path, &mut files);
         return;
     }
 

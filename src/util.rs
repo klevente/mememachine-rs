@@ -1,6 +1,5 @@
 use serenity::{model::channel::Message, Result as SerenityResult};
-use sorted_vec::SortedSet;
-use std::{path::Path};
+use std::path::Path;
 
 /// Checks that a message successfully sent; if not, then logs why to stdout.
 pub fn check_msg(result: SerenityResult<Message>) {
@@ -9,16 +8,8 @@ pub fn check_msg(result: SerenityResult<Message>) {
     }
 }
 
-pub fn load_all_sound_files<P: AsRef<Path>>(path: P) -> SortedSet<String> {
-    let mut ret = SortedSet::new();
-    sync_sound_files_with_fs(path, &mut ret);
-    ret
-}
-
-pub fn sync_sound_files_with_fs<P: AsRef<Path>>(path: P, files: &mut SortedSet<String>) {
-    files.clear();
-    std::fs::read_dir(path)
-        .unwrap()
+pub fn get_sounds<P: AsRef<Path>>(path: P) -> Result<Vec<String>, std::io::Error> {
+    let files = std::fs::read_dir(path)?
         .filter_map(|f| {
             let entry = f.unwrap();
             let file_name_os = entry.file_name();
@@ -30,7 +21,7 @@ pub fn sync_sound_files_with_fs<P: AsRef<Path>>(path: P, files: &mut SortedSet<S
                 Some(name.to_string())
             }
         })
-        .for_each(|name| {
-            let _ = files.find_or_insert(name);
-        });
+        .collect();
+
+    Ok(files)
 }

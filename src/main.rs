@@ -1,11 +1,11 @@
-use crate::{handler::Handler, util::load_all_sound_files};
+use crate::handler::Handler;
 use serenity::{
     client::Client,
     prelude::{GatewayIntents, Mutex, *},
 };
 use songbird::SerenityInit;
 use sorted_vec::SortedSet;
-use std::{env, sync::Arc};
+use std::{env, path::PathBuf, sync::Arc};
 
 mod commands;
 mod handler;
@@ -32,21 +32,21 @@ async fn init_config(client: &Client, sounds_path: String) {
     data.insert::<ConfigStore>(Arc::new(Config { sounds_path }));
 }
 
-async fn init_sounds(client: &Client) {
-    let mut data = client.data.write().await;
-
-    let cfg = data.get::<ConfigStore>().cloned().expect("Should be here");
-    let files = load_all_sound_files(&cfg.sounds_path);
-
-    data.insert::<SoundStore>(Arc::new(Mutex::new(files)));
-}
-
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let sounds_path = env::var("SOUNDS_PATH").unwrap_or_else(|_| "sounds".to_string());
+
+    let path = PathBuf::from(sounds_path.clone());
+    if !path.exists() || !path.is_dir() {
+        println!(
+            "Sound directory not found or not directory: {}",
+            path.display()
+        );
+        return;
+    }
 
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
 
@@ -57,7 +57,6 @@ async fn main() {
         .expect("Error creating client");
 
     init_config(&client, sounds_path).await;
-    init_sounds(&client).await;
 
     let _ = client
         .start()
