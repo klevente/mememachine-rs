@@ -34,10 +34,7 @@ async fn main() {
 
     let sounds_path = PathBuf::from(sounds_path);
     if !sounds_path.exists() || !sounds_path.is_dir() {
-        println!(
-            "Sound directory not found or not directory: {}",
-            sounds_path.display()
-        );
+        tracing::error!("{} is not a valid directory!", sounds_path.display());
         return;
     }
 
@@ -54,5 +51,5 @@ async fn main() {
     let _ = client
         .start()
         .await
-        .map_err(|why| println!("Client ended: {:?}", why));
+        .map_err(|e| tracing::error!("Client execution resulted in an error: {e}"));
 }
