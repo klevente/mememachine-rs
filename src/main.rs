@@ -1,21 +1,14 @@
 use crate::handler::Handler;
 use serenity::{
     client::Client,
-    prelude::{GatewayIntents, Mutex, *},
+    prelude::{GatewayIntents, *},
 };
 use songbird::SerenityInit;
-use sorted_vec::SortedSet;
 use std::{env, path::PathBuf, sync::Arc};
 
 mod commands;
 mod handler;
 mod util;
-
-pub struct SoundStore;
-
-impl TypeMapKey for SoundStore {
-    type Value = Arc<Mutex<SortedSet<String>>>;
-}
 
 pub struct ConfigStore;
 
@@ -24,10 +17,10 @@ impl TypeMapKey for ConfigStore {
 }
 
 pub struct Config {
-    sounds_path: String,
+    sounds_path: PathBuf,
 }
 
-async fn init_config(client: &Client, sounds_path: String) {
+async fn init_config(client: &Client, sounds_path: PathBuf) {
     let mut data = client.data.write().await;
     data.insert::<ConfigStore>(Arc::new(Config { sounds_path }));
 }
@@ -39,11 +32,11 @@ async fn main() {
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let sounds_path = env::var("SOUNDS_PATH").unwrap_or_else(|_| "sounds".to_string());
 
-    let path = PathBuf::from(sounds_path.clone());
-    if !path.exists() || !path.is_dir() {
+    let sounds_path = PathBuf::from(sounds_path);
+    if !sounds_path.exists() || !sounds_path.is_dir() {
         println!(
             "Sound directory not found or not directory: {}",
-            path.display()
+            sounds_path.display()
         );
         return;
     }
