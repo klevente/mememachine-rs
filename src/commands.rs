@@ -7,7 +7,6 @@ use songbird::{
 };
 use std::path::PathBuf;
 
-
 const MAX_MSG_LEN: usize = 2000;
 
 #[tracing::instrument(skip(ctx, msg))]
