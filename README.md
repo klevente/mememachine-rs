@@ -46,4 +46,4 @@ The bot's prefix is `%`. The available commands are:
 
 ## Logs
 
-The bot will log `INFO`-level logs to `stdout` by default. To change the log level, supply the `RUST_LOG` environment variable with one of the following: `trace`, `debug`, `info`, `warn`, `error`
+The bot will log `INFO`-level logs to `stdout` by default. To change the log level, supply the `RUST_LOG` environment variable with one of the following: `trace`, `debug`, `info`, `warn`, `error`.
