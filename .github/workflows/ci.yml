@@ -75,14 +75,17 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Package
+        if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
           #strip target/${{ matrix.target }}/release/mememachine-rs
           cd target/${{ matrix.target }}/release          
           tar czvf ../../../mememachine-rs-${{ matrix.target }}.tar.gz mememachine-rs
           cd -
+
       - name: Publish
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         # TODO: if any of the build step fails, the release should be deleted.
         with:
-          files: 'mememmachine-rs*'
+          files: 'mememachine-rs*'
