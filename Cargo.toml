@@ -21,3 +21,7 @@ default_features = false
 [dependencies.tokio]
 version = "1.26"
 features = ["macros", "rt-multi-thread"]
+
+[profile.release]
+lto = "fat"
+strip = "debuginfo"
