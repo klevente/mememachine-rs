@@ -32,7 +32,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.arch.os }}
 
     strategy:
       matrix:
@@ -68,21 +68,21 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-${{ matrix.target }}-test-${{ steps.tc.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.toml') }}
+          key: ${{ runner.os }}-${{ matrix.arch.target }}-test-${{ steps.tc.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.toml') }}
 
       - name: Build Binary
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: --release --target ${{ matrix.arch.target }}
 
       - name: Package
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
-          cd target/${{ matrix.target }}/release          
-          tar czvf ../../../mememachine-rs-${{ matrix.target }}.tar.gz mememachine-rs${{ matrix.suffix }}
+          cd target/${{ matrix.arch.target }}/release          
+          tar czvf ../../../mememachine-rs-${{ matrix.arch.target }}.tar.gz mememachine-rs${{ matrix.arch.suffix }}
           cd -
 
       - name: Publish
