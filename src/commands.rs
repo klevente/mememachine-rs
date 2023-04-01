@@ -5,7 +5,6 @@ use songbird::{
     input::{self},
     Event, TrackEvent,
 };
-use std::path::PathBuf;
 
 const MAX_MSG_LEN: usize = 2000;
 
@@ -57,7 +56,20 @@ pub async fn help_command(ctx: Context, msg: Message) {
 async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
     let config = ctx.data.read().await.get::<ConfigStore>().cloned().unwrap();
 
-    let file_path = PathBuf::from(&config.sounds_path).join(format!("{file_name}.mp3"));
+    let guild = msg.guild(&ctx.cache).unwrap();
+    let guild_id = guild.id;
+
+    let channel_id = guild
+        .voice_states
+        .get(&msg.author.id)
+        .and_then(|voice_state| voice_state.channel_id);
+
+    let Some(connect_to) = channel_id else {
+        check_msg(msg.reply(ctx, "You're not in a voice channel!").await);
+        return;
+    };
+
+    let file_path = config.sounds_path.join(format!("{file_name}.mp3"));
 
     if !file_path.exists() {
         tracing::info!("No sound was found with name '{file_name}'");
@@ -73,22 +85,6 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
                 msg.reply(ctx, format!("Unexpected error occurred: {e}"))
                     .await,
             );
-            return;
-        }
-    };
-
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
-
-    let channel_id = guild
-        .voice_states
-        .get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id);
-
-    let connect_to = match channel_id {
-        Some(channel) => channel,
-        None => {
-            check_msg(msg.reply(ctx, "You're not in a voice channel!").await);
             return;
         }
     };
