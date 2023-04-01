@@ -73,3 +73,16 @@ jobs:
           use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          #strip target/${{ matrix.target }}/release/mememachine-rs
+          cd target/${{ matrix.target }}/release          
+          tar czvf ../../../mememachine-rs-${{ matrix.target }}.tar.gz mememachine-rs
+          cd -
+      - name: Publish
+        uses: softprops/action-gh-release@v1
+        # TODO: if any of the build step fails, the release should be deleted.
+        with:
+          files: 'mememmachine-rs*'
