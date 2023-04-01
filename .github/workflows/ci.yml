@@ -91,8 +91,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && matrix.target == 'aarch64-unknown-linux-gnu'
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
-          path: build/
+          switches: -avzr --delete --include="mememachine-rs" --exclude="*"
+          path: target/${{ matrix.target }}/release
           remote_path: ${{ secrets.REMOTE_PATH }}
           remote_host: ${{ secrets.REMOTE_HOST }}
           remote_port: ${{ secrets. REMOTE_PORT }}
