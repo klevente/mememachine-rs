@@ -16,7 +16,7 @@ pub struct Handler;
 impl EventHandler for Handler {
     #[tracing::instrument(skip(self, ctx, msg), fields(request_id = %Uuid::new_v4()))]
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.len() < 2 {
+        if msg.content.len() < 2 || !msg.content.is_char_boundary(1) {
             return;
         }
         let (prefix, message) = msg.content.split_at(1);
