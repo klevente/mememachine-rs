@@ -16,13 +16,10 @@ pub struct Handler;
 impl EventHandler for Handler {
     #[tracing::instrument(skip(self, ctx, msg), fields(request_id = %Uuid::new_v4()))]
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.len() < 2 || !msg.content.is_char_boundary(1) {
+        if !msg.content.starts_with(PREFIX) {
             return;
         }
-        let (prefix, message) = msg.content.split_at(1);
-        if !prefix.starts_with(PREFIX) {
-            return;
-        }
+        let (_, message) = msg.content.split_at(1);
 
         match message {
             "list" | "help" => help_command(ctx, msg).await,
