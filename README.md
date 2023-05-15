@@ -47,3 +47,10 @@ The bot's prefix is `%`. The available commands are:
 ## Logs
 
 The bot will log `INFO`-level logs to `stdout` by default. To change the log level, supply the `RUST_LOG` environment variable with one of the following: `trace`, `debug`, `info`, `warn`, `error`.
+
+# TODO:
+
+- [ ] Add script for bulk uploading files to Fly volumes
+- [ ] Add details on how to deploy to fly.io
+- [ ] Publish in Docker registry
+- [ ] Create GH Action for deploying automatically (have to click button to actually deploy)
