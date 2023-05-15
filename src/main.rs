@@ -43,6 +43,8 @@ async fn main() {
 
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
 
+    tracing::info!("Starting client with path {}", sounds_path.display());
+
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .register_songbird()
@@ -50,6 +52,8 @@ async fn main() {
         .expect("Error creating client");
 
     init_config(&client, sounds_path).await;
+
+    tracing::info!("Client successfully started!");
 
     let _ = client
         .start()
