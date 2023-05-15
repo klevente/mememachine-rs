@@ -22,6 +22,13 @@ pub async fn random_command(ctx: Context, msg: Message) {
         let config = ctx.data.read().await.get::<ConfigStore>().cloned().unwrap();
 
         let files = get_sounds(&config.sounds_path).unwrap();
+        if files.is_empty() {
+            check_msg(
+                msg.reply(ctx, "There are no sound files to choose from! Please add some to the sounds directory.")
+                    .await,
+            );
+            return;
+        }
         let mut rng = rand::thread_rng();
         let idx = rng.gen_range(0..files.len());
         files[idx].clone()
