@@ -15,7 +15,6 @@ FROM debian:bullseye-slim
 RUN apt update && apt install -y ffmpeg
 
 WORKDIR /app
-RUN mkdir /app/sounds
 
 # Get compiled binaries from builder's cargo install directory
 COPY --from=builder /usr/src/app/mememachine-rs /app/mememachine-rs
