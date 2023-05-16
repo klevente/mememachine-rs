@@ -2,8 +2,11 @@
 name = "mememachine-rs"
 version = "0.1.8"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["klevente"]
+description = "A Discord soundboard bot"
+repository = "https://github.com/klevente/mememachine-rs"
+license = "MIT"
+keywords = ["discord", "soundboard", "bot"]
 
 [dependencies]
 rand = "0.8"
