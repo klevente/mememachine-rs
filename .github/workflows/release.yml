@@ -54,44 +54,44 @@ jobs:
           - { target: x86_64-pc-windows-msvc, os: windows-latest, suffix: ".exe" }
           - { target: x86_64-apple-darwin, os: macos-latest, suffix: "" }
 
-      steps:
-        - name: Checkout sources
-          uses: actions/checkout@v3
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
 
-        - name: Install toolchain
-          uses: actions-rs/toolchain@v1
-          with:
-            toolchain: stable
-            profile: minimal
-            override: true
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
 
-        - name: Install dependencies
-          if: runner.os == 'Linux'
-          run: |
-            sudo apt update
-            sudo apt install -y libopus-dev
+      - name: Install dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y libopus-dev
 
-        - name: Cache
-          uses: Swatinem/rust-cache@v1
+      - name: Cache
+        uses: Swatinem/rust-cache@v1
 
-        - name: Build release binary
-          uses: actions-rs/cargo@v1
-          with:
-            use-cross: true
-            command: build
-            args: --release --locked --target ${{ matrix.arch.target }}
+      - name: Build release binary
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --locked --target ${{ matrix.arch.target }}
 
-        - name: Package
-          shell: bash
-          run: |
-            cd target/${{ matrix.arch.target }}/release          
-            tar czvf ../../../mememachine-rs-${{ matrix.arch.target }}.tar.gz mememachine-rs${{ matrix.arch.suffix }}
-            cd -
+      - name: Package
+        shell: bash
+        run: |
+          cd target/${{ matrix.arch.target }}/release          
+          tar czvf ../../../mememachine-rs-${{ matrix.arch.target }}.tar.gz mememachine-rs${{ matrix.arch.suffix }}
+          cd -
 
-        - name: Publish
-          uses: softprops/action-gh-release@v1
-          with:
-            files: "mememachine-rs*"
+      - name: Publish
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "mememachine-rs*"
 
   docker:
     name: Build & push Docker image
