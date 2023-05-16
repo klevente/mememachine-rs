@@ -1,4 +1,5 @@
 name: Release
+# https://codingpackets.com/blog/rust-binary-and-docker-releases-using-github-actions/#release-workflow
 
 permissions:
   contents: "write"
@@ -95,6 +96,7 @@ jobs:
           files: "mememachine-rs*"
 
   docker:
+    # https://github.com/aquelemiguel/parrot/blob/main/.github/workflows/docker.yml
     name: Build & push Docker image
     needs: [tag]
     if: startsWith(github.ref, 'refs/tags/')
