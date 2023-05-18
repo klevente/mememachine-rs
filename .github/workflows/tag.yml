@@ -10,8 +10,6 @@ on:
       - main
     types: [closed]
 
-  workflow_dispatch:
-
 jobs:
   tag:
     if: ${{ github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'release') }}
