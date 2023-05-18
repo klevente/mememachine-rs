@@ -1,5 +1,5 @@
-name: Deploy on Fly
 # https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
+name: Deploy on Fly
 
 on:
   workflow_dispatch:
@@ -19,8 +19,10 @@ jobs:
         with:
           ref: ${{ steps.release-tag.outputs.TAG }}
 
-      - name: Deploy on Fly
+      - name: Set up flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy on Fly
         run: flyctl deploy --remote-only
         env:
           # https://fly.io/docs/reference/deploy-tokens/
