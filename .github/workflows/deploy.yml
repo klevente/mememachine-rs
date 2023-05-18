@@ -9,9 +9,19 @@ jobs:
     name: Deploy app
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - name: Get latest release tag
+        id: release-tag
+        run: |
+          echo "TAG=$(curl -s ${{ github.api_url }}/repos/${{ github.repository }}/releases/latest | jq '.tag_name' | sed 's/\"//g')" >> $GITHUB_OUTPUT
+
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.release-tag.outputs.TAG }}
+
+      - name: Deploy on Fly
+        uses: superfly/flyctl-actions/setup-flyctl@master
+        run: flyctl deploy --remote-only
         env:
           # https://fly.io/docs/reference/deploy-tokens/
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
