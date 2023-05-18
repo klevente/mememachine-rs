@@ -55,11 +55,10 @@ jobs:
           args: --release --locked --target ${{ matrix.arch.target }}
 
       - name: Package
-        shell: bash
-        run: |
-          cd target/${{ matrix.arch.target }}/release          
-          tar czvf ../../../mememachine-rs-${{ matrix.arch.target }}.tar.gz mememachine-rs${{ matrix.arch.suffix }}
-          cd -
+        uses: vimtor/action-zip@v1.1
+        with:
+          files: target/${{ matrix.arch.target }}/release/mememachine-rs${{ matrix.arch.suffix }}
+          dest: mememachine-rs-${{ matrix.arch.target }}.zip
 
       - name: Publish
         uses: softprops/action-gh-release@v1
