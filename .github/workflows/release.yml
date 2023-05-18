@@ -20,11 +20,11 @@ jobs:
     if: ${{ github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'release') }}
     name: Create tag
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.VERSION }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
@@ -34,18 +34,17 @@ jobs:
           override: true
 
       - name: Get version from Cargo.toml
-        id: get_version
-        run: echo VERSION=$(cargo pkgid | cut -d# -f2) >> $GITHUB_OUTPUT
+        id: get-version
+        run: echo VERSION=$(cargo pkgid | cut -d@ -f2) >> $GITHUB_OUTPUT
 
       - name: Push tag
         shell: "bash"
         run: |
-          git tag v${{ steps.get-tag.outputs.VERSION }} && git push --tags
+          git tag ${{ steps.get-version.outputs.VERSION }} && git push --tags
 
   release:
     name: Create release
     needs: [tag]
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.arch.os }}
 
     strategy:
@@ -94,6 +93,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: "mememachine-rs*"
+          tag_name: ${{ needs.tag.outputs.version }}
 
   docker:
     # https://github.com/aquelemiguel/parrot/blob/main/.github/workflows/docker.yml
@@ -124,5 +124,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
