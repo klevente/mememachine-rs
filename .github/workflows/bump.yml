@@ -1,4 +1,4 @@
-name: Create Release PR
+name: Create Version Bump PR PR
 # https://github.com/aquelemiguel/parrot/blob/main/.github/workflows/bump.yml
 
 on:
@@ -42,14 +42,14 @@ jobs:
 
       - name: Get latest version
         id: get_version
-        run: echo ::set-output name=VERSION::$(cargo pkgid | cut -d# -f2)
+        run: echo "VERSION=$(cargo pkgid | cut -d@ -f2)" >> $GITHUB_OUTPUT
 
       - name: Create bump PR
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'chore: bump version to ${{ steps.get_version.outputs.VERSION }}'
-          title: 'chore: bump version to ${{ steps.get_version.outputs.VERSION }}'
+          commit-message: 'chore(project): bump version to ${{ steps.get_version.outputs.VERSION }}'
+          title: 'chore(project): bump version to ${{ steps.get_version.outputs.VERSION }}'
           body: |
             Bump version to ${{ steps.get_version.outputs.VERSION }}
 

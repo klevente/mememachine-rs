@@ -13,5 +13,12 @@ README.md
 **/*.rs.bk
 /target
 
+# Fly files
+fly.toml
+
+# Data
+/sounds
+/scripts
+
 # Env
 .env
