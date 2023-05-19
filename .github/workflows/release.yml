@@ -45,7 +45,7 @@ jobs:
           sudo apt install -y libopus-dev
 
       - name: Cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
         uses: actions-rs/cargo@v1
