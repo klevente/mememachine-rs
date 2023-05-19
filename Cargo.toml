@@ -1,6 +1,6 @@
 [package]
 name = "mememachine-rs"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 authors = ["klevente"]
 description = "A Discord soundboard bot"
@@ -22,7 +22,7 @@ features = ["cache", "voice", "http", "rustls_backend"]
 default_features = false
 
 [dependencies.tokio]
-version = "1.26"
+version = "1.28"
 features = ["macros", "rt-multi-thread"]
 
 [profile.release]
