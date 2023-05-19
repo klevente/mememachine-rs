@@ -11,8 +11,7 @@ pub fn check_msg(result: SerenityResult<Message>) {
 pub fn get_sounds<P: AsRef<Path>>(path: P) -> Result<Vec<String>, std::io::Error> {
     let files = std::fs::read_dir(path)?
         .filter_map(|f| {
-            tracing::info!("{:?}", &f);
-            let entry = f.unwrap();
+            let entry = f.expect("Could not read file metadata when parsing sound directory");
             let file_name_os = entry.file_name();
             let file_name = file_name_os.to_string_lossy();
             if file_name.ends_with(".mp3") {
@@ -21,11 +20,6 @@ pub fn get_sounds<P: AsRef<Path>>(path: P) -> Result<Vec<String>, std::io::Error
             } else {
                 None
             }
-            /*if ext != "mp3" {
-                None
-            } else {
-                Some(name.to_string())
-            }*/
         })
         .collect();
 
