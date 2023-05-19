@@ -1,7 +1,7 @@
 # mememachine-rs
 
 ![License](https://img.shields.io/github/license/klevente/mememachine-rs?style=flat-square)
-[![CI Status](https://img.shields.io/github/actions/workflow/status/klevente/mememachine-rs/ci.yml?style=flat-square)](https://github.com/klevente/mememachine-rs/actions/workflows/ci.yml)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/klevente/mememachine-rs/ci.yml?branch=main&style=flat-square)](https://github.com/klevente/mememachine-rs/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/klevente/mememachine-rs?style=flat-square)](https://github.com/klevente/mememachine-rs/releases/latest)
 
 Discord bot for playing custom sounds in voice chat. It is similar to the new official [Soundboard feature](https://support.discord.com/hc/en-us/articles/12612888127767-Soundboard-FAQ), but allows for unlimited samples per instance. Supports `.mp3` files for now. Also supports "hot-reload", meaning that you can add and remove sound files on the fly without restarting the bot.
