@@ -1,5 +1,5 @@
-name: Create Version Bump PR PR
 # https://github.com/aquelemiguel/parrot/blob/main/.github/workflows/bump.yml
+name: Create Version Bump PR
 
 on:
   workflow_dispatch:

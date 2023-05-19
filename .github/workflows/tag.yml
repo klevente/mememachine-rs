@@ -1,5 +1,5 @@
-name: Tag
 # https://codingpackets.com/blog/rust-binary-and-docker-releases-using-github-actions/#release-workflow
+name: Tag
 
 permissions:
   contents: "write"
