@@ -22,7 +22,7 @@ features = ["cache", "voice", "http", "rustls_backend"]
 default_features = false
 
 [dependencies.tokio]
-version = "1.28"
+version = "1.29"
 features = ["macros", "rt-multi-thread"]
 
 [profile.release]
