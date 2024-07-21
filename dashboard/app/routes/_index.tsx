@@ -2,6 +2,7 @@ import { ActionFunctionArgs, json, MetaFunction } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { SOUNDS_PATH } from "~/config/config.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -10,10 +11,8 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-const FILE_PATH = "./public/sounds";
-
 export async function loader() {
-  const sounds = await fs.readdir(FILE_PATH, {
+  const sounds = await fs.readdir(SOUNDS_PATH, {
     withFileTypes: true,
     recursive: false,
   });
@@ -32,7 +31,7 @@ export async function action(args: ActionFunctionArgs) {
 }
 
 async function deleteSound(name: string) {
-  const absolutePath = path.join(FILE_PATH, name);
+  const absolutePath = path.join(SOUNDS_PATH, name);
   await fs.rm(absolutePath);
 }
 
