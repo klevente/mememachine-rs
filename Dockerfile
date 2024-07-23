@@ -1,4 +1,4 @@
-FROM rust:slim-bookworm as bot-builder
+FROM rust:slim-bookworm AS bot-builder
 
 RUN apt update && apt install -y cmake
 
@@ -9,17 +9,17 @@ RUN --mount=type=cache,target=/usr/local/cargo,from=rust:latest,source=/usr/loca
     --mount=type=cache,target=target \
     cargo build --release && mv ./target/release/mememachine-rs ./mememachine-rs
 
-FROM node:20-bookworm-slim as node-base
+FROM node:20-bookworm-slim AS node-base
 
 ENV NODE_ENV production
 
-FROM node-base as dashboard-all-deps
+FROM node-base AS dashboard-all-deps
 
 WORKDIR /usr/src/dashboard
 COPY dashboard/package.json dashboard/package-lock.json ./
 RUN npm ci --include=dev
 
-FROM node-base as dashboard-prod-deps
+FROM node-base AS dashboard-prod-deps
 
 WORKDIR /usr/src/dashboard
 
@@ -27,7 +27,7 @@ COPY --from=dashboard-all-deps /usr/src/dashboard/node_modules /usr/src/dashboar
 COPY dashboard/package.json dashboard/package-lock.json ./
 RUN npm prune --omit=dev
 
-FROM node:20-bullseye-slim as dashboard-builder
+FROM node:20-bullseye-slim AS dashboard-builder
 
 WORKDIR /usr/src/dashboard
 
@@ -37,7 +37,7 @@ COPY ./dashboard .
 RUN npm run build
 
 # Runtime image
-FROM node:20-bookworm-slim as runtime
+FROM node:20-bookworm-slim AS runtime
 
 EXPOSE 8080
 
