@@ -13,6 +13,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return new Response(JSON.stringify({ status: "ok" }));
   } catch (error: unknown) {
     console.log("healthcheck ❌", { error });
-    return new Response("ERROR", { status: 500 });
+    return new Response(JSON.stringify({ status: "unhealthy" }), {
+      status: 500,
+    });
   }
 }
