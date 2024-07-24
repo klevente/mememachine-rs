@@ -3,7 +3,7 @@ import {
   unstable_createFileUploadHandler as createFileUploadHandler,
   unstable_parseMultipartFormData as parseMultipartFormData,
 } from "@remix-run/node";
-import { SOUNDS_PATH } from "~/config/config.server";
+import { SOUNDS_PATH } from "~/config/constants.server";
 
 export async function action(args: ActionFunctionArgs) {
   const uploadHandler = createFileUploadHandler({
