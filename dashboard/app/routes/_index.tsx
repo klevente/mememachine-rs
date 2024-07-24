@@ -10,7 +10,7 @@ import { SOUNDS_PATH } from "~/config/constants.server";
 import { Button } from "~/components/ui/button";
 import { Loader2, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
-import { type ChangeEvent, useCallback, useState } from "react";
+import { type ChangeEvent, Fragment, useCallback, useState } from "react";
 import { Separator } from "~/components/ui/separator";
 
 export const meta: MetaFunction = () => {
@@ -99,23 +99,14 @@ export default function Index() {
       <div className="flex flex-col gap-4 mt-4">
         <div className="grid grid-cols-1 md:grid-cols-[20%_70%_10%] items-center gap-4 mt-4">
           {filesToRender.map((file, i) => (
-            <>
-              {i > 0 && (
-                <Separator key={`sep-${i}`} className="my-4 md:col-span-3" />
-              )}
-              <div
-                key={`${file}-name`}
-                className="text-sm font-medium font-mono leading-none"
-              >
+            <Fragment key={file}>
+              {i > 0 && <Separator className="my-4 md:col-span-3" />}
+              <div className="text-sm font-medium font-mono leading-none">
                 {file}
               </div>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <audio
-                key={`${file}-audio`}
-                src={`/sounds/${file}`}
-                controls
-              ></audio>
-              <fetcher.Form method="post" key={`${file}-form`}>
+              <audio src={`/sounds/${file}`} controls></audio>
+              <fetcher.Form method="post">
                 <Button
                   className="hidden md:inline-flex"
                   name="file"
@@ -134,7 +125,7 @@ export default function Index() {
                   Delete
                 </Button>
               </fetcher.Form>
-            </>
+            </Fragment>
           ))}
         </div>
       </div>
