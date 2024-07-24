@@ -46,18 +46,20 @@ jobs:
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bot
 
       - name: Build release binary
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --release --locked --target ${{ matrix.arch.target }}
+          args: --manifest-path bot/Cargo.toml --release --locked --target ${{ matrix.arch.target }}
 
       - name: Package
         uses: vimtor/action-zip@v1.1
         with:
-          files: target/${{ matrix.arch.target }}/release/mememachine-rs${{ matrix.arch.suffix }}
+          files: bot/target/${{ matrix.arch.target }}/release/mememachine-rs${{ matrix.arch.suffix }}
           dest: mememachine-rs-${{ matrix.arch.target }}.zip
 
       - name: Publish
@@ -92,7 +94,7 @@ jobs:
       - name: Build & push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: ./bot
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

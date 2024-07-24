@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
 
 env:
@@ -16,6 +16,9 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./bot
 
     steps:
       - name: Checkout sources
@@ -32,16 +35,22 @@ jobs:
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bot
+
 
       - name: Run clippy
         uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: -- -D clippy::all -D warnings
+          args: --manifest-path bot/Cargo.toml -- -D clippy::all -D warnings
 
   rustfmt:
     name: Format
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./bot
 
     steps:
       - name: Checkout sources
@@ -61,6 +70,9 @@ jobs:
   build:
     name: Build
     runs-on: ${{ matrix.arch.os }}
+    defaults:
+      run:
+        working-directory: ./bot
 
     strategy:
       matrix:
@@ -78,6 +90,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: ${{ matrix.arch.target }}
           profile: minimal
           override: true
 
@@ -89,10 +102,12 @@ jobs:
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bot
 
       - name: Build Binary
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --locked --target ${{ matrix.arch.target }}
+          args: --manifest-path bot/Cargo.toml --locked --target ${{ matrix.arch.target }}
