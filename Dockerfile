@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/usr/local/cargo,from=rust:latest,source=/usr/loca
 
 FROM node:20-bookworm-slim AS node-base
 
-ENV NODE_ENV production
+ENV NODE_ENV="production"
 
 FROM node-base AS dashboard-all-deps
 
@@ -62,7 +62,6 @@ COPY --from=dashboard-prod-deps /usr/src/dashboard/node_modules /app/dashboard/n
 COPY --from=dashboard-builder /usr/src/dashboard/build /app/dashboard/build
 COPY --from=dashboard-builder /usr/src/dashboard/public /app/dashboard/public
 COPY --from=dashboard-builder /usr/src/dashboard/package.json /app/dashboard/package.json
-COPY --from=dashboard-builder /usr/src/dashboard/start.sh /app/dashboard/start.sh
 
 # Get start script from repo
 COPY start.sh .
