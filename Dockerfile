@@ -44,13 +44,6 @@ EXPOSE 8080
 ENV PORT="8080"
 ENV NODE_ENV="production"
 
-RUN apt-get update  \
-    && apt-get install -y --no-install-recommends ffmpeg \
-    # Cleanup
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # Get compiled binaries from builder's cargo install directory
@@ -62,6 +55,7 @@ COPY --from=dashboard-prod-deps /usr/src/dashboard/node_modules /app/dashboard/n
 COPY --from=dashboard-builder /usr/src/dashboard/build /app/dashboard/build
 COPY --from=dashboard-builder /usr/src/dashboard/public /app/dashboard/public
 COPY --from=dashboard-builder /usr/src/dashboard/package.json /app/dashboard/package.json
+COPY --from=dashboard-builder /usr/src/dashboard/app/db/migrations /app/dashboard/app/db/migrations
 
 # Get start script from repo
 COPY start.sh .

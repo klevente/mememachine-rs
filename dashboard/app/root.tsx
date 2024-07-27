@@ -17,7 +17,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <div className="font-sans p-4 mx-auto max-w-2xl">{children}</div>
         <ScrollRestoration />
         <Scripts />
       </body>

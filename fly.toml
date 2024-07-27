@@ -4,11 +4,12 @@ kill_signal = "SIGINT"
 kill_timeout = "5s"
 
 [env]
-SOUNDS_PATH = "/sounds"
+SOUNDS_PATH = "/data/sounds"
+DATABASE_PATH = "/data/database.sqlite"
 
 [[mounts]]
 source = "mememachine_data"
-destination = "/sounds"
+destination = "/data"
 
 [[services]]
 internal_port = 8080

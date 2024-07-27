@@ -1,9 +1,10 @@
 import {
   type ActionFunctionArgs,
   json,
+  type LoaderFunctionArgs,
   type MetaFunction,
 } from "@remix-run/node";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { Form, useFetcher, useLoaderData } from "@remix-run/react";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { SOUNDS_PATH } from "~/config/constants.server";
@@ -12,6 +13,7 @@ import { Loader2, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { type ChangeEvent, Fragment, useCallback, useState } from "react";
 import { Separator } from "~/components/ui/separator";
+import { authenticator } from "~/services/auth.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -23,7 +25,11 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export async function loader() {
+export async function loader({ request }: LoaderFunctionArgs) {
+  await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
   const sounds = await fs.readdir(SOUNDS_PATH, {
     withFileTypes: true,
     recursive: false,
@@ -67,10 +73,18 @@ export default function Index() {
   );
 
   return (
-    <div className="font-sans p-4 mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold tracking-tight mb-4">
-        Mememachine Admin Panel
-      </h1>
+    <>
+      <div className="flex justify-between">
+        <h1 className="text-2xl font-bold tracking-tight mb-4">
+          Mememachine Admin Panel
+        </h1>
+        <Form action="/logout" method="post">
+          <Button variant="secondary" type="submit">
+            Logout
+          </Button>
+        </Form>
+      </div>
+      <Separator className="my-4" />
       <fetcher.Form
         action="upload"
         method="post"
@@ -83,6 +97,7 @@ export default function Index() {
           name="sound"
           type="file"
           accept=".mp3"
+          multiple
           className="md:max-w-64"
         />
         <Button type="submit" disabled={!fileSelected || isUploading}>
@@ -129,6 +144,6 @@ export default function Index() {
           ))}
         </div>
       </div>
-    </div>
+    </>
   );
 }
