@@ -4,7 +4,7 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "@remix-run/node";
-import { Form } from "@remix-run/react";
+import { Form, useNavigation } from "@remix-run/react";
 import {
   authenticator,
   RemixHookFormValidationError,
@@ -27,6 +27,7 @@ import {
   type LoginFormFields,
   loginSchemaResolver,
 } from "~/services/auth-schema";
+import { Loader2 } from "lucide-react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -79,6 +80,10 @@ export default function Login() {
     resolver: loginSchemaResolver,
   });
 
+  const navigation = useNavigation();
+
+  const isSigningIn = navigation.state !== "idle";
+
   return (
     <Card className="w-full mx-auto max-w-sm mt-52">
       <Form method="post" onSubmit={handleSubmit}>
@@ -118,7 +123,16 @@ export default function Login() {
           <FormMessage error={errors.root?.invalid} />
         </CardContent>
         <CardFooter>
-          <Button className="w-full">Sign in</Button>
+          <Button className="w-full" disabled={isSigningIn}>
+            {isSigningIn ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
         </CardFooter>
       </Form>
     </Card>
