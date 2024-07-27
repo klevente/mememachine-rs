@@ -11,9 +11,18 @@ import { SOUNDS_PATH } from "~/config/constants.server";
 import { Button } from "~/components/ui/button";
 import { Loader2, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
-import { type ChangeEvent, Fragment, useCallback, useState } from "react";
+import {
+  type ChangeEvent,
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Separator } from "~/components/ui/separator";
 import { authenticator } from "~/services/auth.server";
+import { action as uploadAction } from "./upload";
+import { useToast } from "~/components/ui/use-toast";
 
 export const meta: MetaFunction = () => {
   return [
@@ -44,8 +53,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export async function action(args: ActionFunctionArgs) {
   const data = await args.request.formData();
   const file = data.get("file") as string;
-  await deleteSound(file);
-  return null;
+  try {
+    await deleteSound(file);
+    return {
+      success: true,
+    };
+  } catch (e) {
+    console.error(`An error occurred while deleting sound "${file}"`, e);
+    return {
+      success: false,
+    };
+  }
 }
 
 async function deleteSound(name: string) {
@@ -55,8 +73,14 @@ async function deleteSound(name: string) {
 
 export default function Index() {
   const { files } = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
+  const deleteFetcher = useFetcher<typeof action>({
+    key: "sound-delete",
+  });
+  const uploadFetcher = useFetcher<typeof uploadAction>({
+    key: "sound-upload",
+  });
 
+  const uploadFormRef = useRef<HTMLFormElement>(null);
   const [fileSelected, setFileSelected] = useState(false);
 
   const onFileInputChange = useCallback(
@@ -66,10 +90,50 @@ export default function Index() {
     [],
   );
 
-  const isUploading = fetcher.formAction === "/upload";
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (uploadFetcher.state === "idle" && uploadFetcher.data) {
+      if (uploadFetcher.data?.success) {
+        uploadFormRef.current?.reset();
+        toast({
+          title: "Sound(s) uploaded!",
+          description: "Your sound(s) have been successfully uploaded!",
+        });
+      } else {
+        const description =
+          uploadFetcher.data?.message ??
+          "An error occurred while uploading your sound(s).";
+        toast({
+          variant: "destructive",
+          title: "Error while uploading!",
+          description,
+        });
+      }
+    }
+  }, [toast, uploadFetcher.state, uploadFetcher.data]);
+
+  useEffect(() => {
+    if (deleteFetcher.state === "idle" && deleteFetcher.data) {
+      if (deleteFetcher.data.success) {
+        toast({
+          title: "Sound deleted!",
+          description: "The sound has been successfully deleted!",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error while deleting!",
+          description: "An error occurred while deleting the sound!",
+        });
+      }
+    }
+  }, [toast, deleteFetcher.state, deleteFetcher.data]);
+
+  const isUploading = uploadFetcher.state !== "idle";
 
   const filesToRender = files.filter(
-    (file) => file !== fetcher.formData?.get("file"),
+    (file) => file !== deleteFetcher.formData?.get("file"),
   );
 
   return (
@@ -85,7 +149,8 @@ export default function Index() {
         </Form>
       </div>
       <Separator className="my-4" />
-      <fetcher.Form
+      <uploadFetcher.Form
+        ref={uploadFormRef}
         action="upload"
         method="post"
         encType="multipart/form-data"
@@ -110,7 +175,7 @@ export default function Index() {
             "Upload"
           )}
         </Button>
-      </fetcher.Form>
+      </uploadFetcher.Form>
       <div className="flex flex-col gap-4 mt-4">
         <div className="grid grid-cols-1 md:grid-cols-[20%_70%_10%] items-center gap-4 mt-4">
           {filesToRender.map((file, i) => (
@@ -121,7 +186,7 @@ export default function Index() {
               </div>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <audio src={`/sounds/${file}`} controls></audio>
-              <fetcher.Form method="post">
+              <deleteFetcher.Form method="post">
                 <Button
                   className="hidden md:inline-flex"
                   name="file"
@@ -139,7 +204,7 @@ export default function Index() {
                 >
                   Delete
                 </Button>
-              </fetcher.Form>
+              </deleteFetcher.Form>
             </Fragment>
           ))}
         </div>

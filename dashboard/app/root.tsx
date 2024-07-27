@@ -6,6 +6,7 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import "./tailwind.css";
+import { Toaster } from "~/components/ui/toaster";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,7 +18,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <div className="font-sans p-4 mx-auto max-w-2xl">{children}</div>
+        <main className="font-sans p-4 mx-auto max-w-2xl">{children}</main>
+        <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>
