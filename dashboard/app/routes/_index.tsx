@@ -13,7 +13,7 @@ import { Loader2, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import {
   type ChangeEvent,
-  Fragment,
+  type FunctionComponent,
   useCallback,
   useEffect,
   useRef,
@@ -71,14 +71,86 @@ async function deleteSound(name: string) {
   await fs.rm(absolutePath);
 }
 
+type SoundItemProps = {
+  file: string;
+  index: number;
+};
+
+const SoundItem: FunctionComponent<SoundItemProps> = ({ file, index }) => {
+  const fetcher = useFetcher<typeof action>();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (
+      (fetcher.state === "idle" || fetcher.state === "loading") &&
+      fetcher.data
+    ) {
+      if (fetcher.data.success) {
+        toast({
+          title: "Sound deleted!",
+          description: `"${file}" has been successfully deleted!`,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error while deleting!",
+          description: `An error occurred while deleting "${file}"!`,
+        });
+      }
+    }
+  }, [toast, file, fetcher.state, fetcher.data]);
+
+  const isDeleting = fetcher.state !== "idle";
+
+  return (
+    <>
+      {index > 0 && <Separator className="my-4 md:col-span-3" />}
+      <div className="text-sm font-medium font-mono leading-none">{file}</div>
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <audio
+        src={`/sounds/${file}`}
+        controls
+        className={isDeleting ? "pointer-events-none" : ""}
+      ></audio>
+      <fetcher.Form method="post">
+        <Button
+          className="hidden md:inline-flex"
+          name="file"
+          value={file}
+          variant="ghost"
+          size="icon"
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <Loader2 className="animate-spin text-red-500" />
+          ) : (
+            <X className="text-red-500" />
+          )}
+        </Button>
+        <Button
+          className="md:hidden"
+          name="file"
+          value={file}
+          variant="destructive"
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Deleting
+            </>
+          ) : (
+            "Delete"
+          )}
+        </Button>
+      </fetcher.Form>
+    </>
+  );
+};
+
 export default function Index() {
   const { files } = useLoaderData<typeof loader>();
-  const deleteFetcher = useFetcher<typeof action>({
-    key: "sound-delete",
-  });
-  const uploadFetcher = useFetcher<typeof uploadAction>({
-    key: "sound-upload",
-  });
+  const uploadFetcher = useFetcher<typeof uploadAction>();
 
   const uploadFormRef = useRef<HTMLFormElement>(null);
   const [fileSelected, setFileSelected] = useState(false);
@@ -113,34 +185,14 @@ export default function Index() {
     }
   }, [toast, uploadFetcher.state, uploadFetcher.data]);
 
-  useEffect(() => {
-    if (deleteFetcher.state === "idle" && deleteFetcher.data) {
-      if (deleteFetcher.data.success) {
-        toast({
-          title: "Sound deleted!",
-          description: "The sound has been successfully deleted!",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error while deleting!",
-          description: "An error occurred while deleting the sound!",
-        });
-      }
-    }
-  }, [toast, deleteFetcher.state, deleteFetcher.data]);
-
   const isUploading = uploadFetcher.state !== "idle";
-
-  const filesToRender = files.filter(
-    (file) => file !== deleteFetcher.formData?.get("file"),
-  );
 
   return (
     <>
       <div className="flex justify-between">
-        <h1 className="text-2xl font-bold tracking-tight mb-4">
-          Mememachine Admin Panel
+        <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
+          <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
+          Mememachine
         </h1>
         <Form action="/logout" method="post">
           <Button variant="secondary" type="submit">
@@ -178,34 +230,8 @@ export default function Index() {
       </uploadFetcher.Form>
       <div className="flex flex-col gap-4 mt-4">
         <div className="grid grid-cols-1 md:grid-cols-[20%_70%_10%] items-center gap-4 mt-4">
-          {filesToRender.map((file, i) => (
-            <Fragment key={file}>
-              {i > 0 && <Separator className="my-4 md:col-span-3" />}
-              <div className="text-sm font-medium font-mono leading-none">
-                {file}
-              </div>
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <audio src={`/sounds/${file}`} controls></audio>
-              <deleteFetcher.Form method="post">
-                <Button
-                  className="hidden md:inline-flex"
-                  name="file"
-                  value={file}
-                  variant="ghost"
-                  size="icon"
-                >
-                  <X className="text-red-500" />
-                </Button>
-                <Button
-                  className="md:hidden"
-                  name="file"
-                  value={file}
-                  variant="destructive"
-                >
-                  Delete
-                </Button>
-              </deleteFetcher.Form>
-            </Fragment>
+          {files.map((file, i) => (
+            <SoundItem key={file} file={file} index={i} />
           ))}
         </div>
       </div>

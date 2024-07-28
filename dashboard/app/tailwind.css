@@ -67,3 +67,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Image utilities */
+@layer components {
+  .img-pixelated {
+    image-rendering: pixelated;
+  }
+}
