@@ -23,6 +23,11 @@ import { Separator } from "~/components/ui/separator";
 import { authenticator } from "~/services/auth.server";
 import { action as uploadAction } from "./upload";
 import { useToast } from "~/components/ui/use-toast";
+import { type ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "~/components/ui/data-table";
+import { SimplePagination } from "~/components/ui/simple-pagination";
+
+const PAGE_SIZE = 50;
 
 export const meta: MetaFunction = () => {
   return [
@@ -39,19 +44,36 @@ export async function loader({ request }: LoaderFunctionArgs) {
     failureRedirect: "/login",
   });
 
+  const url = new URL(request.url);
+  const page = parseInt(url.searchParams.get("page") ?? "1", 10);
+
+  const start = (page - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+
   const sounds = await fs.readdir(SOUNDS_PATH, {
     withFileTypes: true,
     recursive: false,
   });
   const files = sounds
+    .slice(start, end)
     .filter((sound) => sound.isFile() && sound.name.endsWith(".mp3"))
     .map(({ name }) => name);
 
-  return json({ files });
+  const numOfSounds = sounds.length;
+
+  const pageCount = Math.ceil(numOfSounds / PAGE_SIZE);
+  const onFirstPage = page === 1;
+  const onLastPage = page === pageCount;
+
+  return json({ files, page, numOfSounds, pageCount, onFirstPage, onLastPage });
 }
 
-export async function action(args: ActionFunctionArgs) {
-  const data = await args.request.formData();
+export async function action({ request }: ActionFunctionArgs) {
+  await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  const data = await request.formData();
   const file = data.get("file") as string;
   try {
     await deleteSound(file);
@@ -71,12 +93,17 @@ async function deleteSound(name: string) {
   await fs.rm(absolutePath);
 }
 
-type SoundItemProps = {
-  file: string;
-  index: number;
+type Sound = {
+  name: string;
 };
 
-const SoundItem: FunctionComponent<SoundItemProps> = ({ file, index }) => {
+type SoundActionsProps = {
+  sound: Sound;
+};
+
+const SoundActions: FunctionComponent<SoundActionsProps> = ({
+  sound: { name },
+}) => {
   const fetcher = useFetcher<typeof action>();
   const { toast } = useToast();
 
@@ -88,68 +115,71 @@ const SoundItem: FunctionComponent<SoundItemProps> = ({ file, index }) => {
       if (fetcher.data.success) {
         toast({
           title: "Sound deleted!",
-          description: `"${file}" has been successfully deleted!`,
+          description: `"${name}" has been successfully deleted!`,
         });
       } else {
         toast({
           variant: "destructive",
           title: "Error while deleting!",
-          description: `An error occurred while deleting "${file}"!`,
+          description: `An error occurred while deleting "${name}"!`,
         });
       }
     }
-  }, [toast, file, fetcher.state, fetcher.data]);
+  }, [toast, name, fetcher.state, fetcher.data]);
 
   const isDeleting = fetcher.state !== "idle";
-
   return (
-    <>
-      {index > 0 && <Separator className="my-4 md:col-span-3" />}
-      <div className="text-sm font-medium font-mono leading-none">{file}</div>
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio
-        src={`/sounds/${file}`}
-        controls
-        className={isDeleting ? "pointer-events-none" : ""}
-      ></audio>
-      <fetcher.Form method="post">
-        <Button
-          className="hidden md:inline-flex"
-          name="file"
-          value={file}
-          variant="ghost"
-          size="icon"
-          disabled={isDeleting}
-        >
-          {isDeleting ? (
-            <Loader2 className="animate-spin text-red-500" />
-          ) : (
-            <X className="text-red-500" />
-          )}
-        </Button>
-        <Button
-          className="md:hidden"
-          name="file"
-          value={file}
-          variant="destructive"
-          disabled={isDeleting}
-        >
-          {isDeleting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Deleting
-            </>
-          ) : (
-            "Delete"
-          )}
-        </Button>
-      </fetcher.Form>
-    </>
+    <fetcher.Form method="post">
+      <Button
+        name="file"
+        value={name}
+        variant="ghost"
+        size="icon"
+        disabled={isDeleting}
+      >
+        {isDeleting ? (
+          <Loader2 className="animate-spin text-red-500" />
+        ) : (
+          <X className="text-red-500" />
+        )}
+      </Button>
+    </fetcher.Form>
   );
 };
 
+const tableColumns: ColumnDef<Sound>[] = [
+  {
+    accessorKey: "name",
+    header: "Name",
+    cell: ({ row }) => {
+      const file = row.original.name;
+
+      return <div className="font-mono">{file}</div>;
+    },
+  },
+  {
+    accessorKey: "audio",
+    header: "Audio",
+    cell: ({ row }) => {
+      const file = row.original.name;
+
+      // eslint-disable-next-line jsx-a11y/media-has-caption
+      return <audio src={`/sounds/${file}`} controls></audio>;
+    },
+  },
+  {
+    accessorKey: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      return <SoundActions sound={row.original} />;
+    },
+  },
+];
+
 export default function Index() {
-  const { files } = useLoaderData<typeof loader>();
+  const { files, page, pageCount, onFirstPage, onLastPage, numOfSounds } =
+    useLoaderData<typeof loader>();
+
   const uploadFetcher = useFetcher<typeof uploadAction>();
 
   const uploadFormRef = useRef<HTMLFormElement>(null);
@@ -228,12 +258,19 @@ export default function Index() {
           )}
         </Button>
       </uploadFetcher.Form>
-      <div className="flex flex-col gap-4 mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-[20%_70%_10%] items-center gap-4 mt-4">
-          {files.map((file, i) => (
-            <SoundItem key={file} file={file} index={i} />
-          ))}
-        </div>
+      <div className="mx-auto mt-4">
+        <DataTable
+          columns={tableColumns}
+          data={files.map((file) => ({ name: file }))}
+        />
+        <SimplePagination
+          numOfItems={numOfSounds}
+          page={page}
+          pageCount={pageCount}
+          onFirstPage={onFirstPage}
+          onLastPage={onLastPage}
+          url="/"
+        />
       </div>
     </>
   );

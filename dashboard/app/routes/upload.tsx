@@ -5,10 +5,15 @@ import {
   unstable_parseMultipartFormData as parseMultipartFormData,
 } from "@remix-run/node";
 import { MAX_UPLOAD_SIZE, SOUNDS_PATH } from "~/config/constants.server";
+import { authenticator } from "~/services/auth.server";
 
-export async function action(
-  args: ActionFunctionArgs,
-): Promise<{ success: boolean; message?: string }> {
+export async function action({
+  request,
+}: ActionFunctionArgs): Promise<{ success: boolean; message?: string }> {
+  await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
   try {
     const uploadHandler = createFileUploadHandler({
       directory: SOUNDS_PATH,
@@ -16,7 +21,7 @@ export async function action(
       maxPartSize: MAX_UPLOAD_SIZE,
       file: ({ filename }) => filename.replace(" ", "_"),
     });
-    await parseMultipartFormData(args.request, uploadHandler);
+    await parseMultipartFormData(request, uploadHandler);
     return {
       success: true,
     };
