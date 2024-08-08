@@ -1,10 +1,10 @@
 import { type AuthenticateOptions, Authenticator, Strategy } from "remix-auth";
 import { sessionStorage } from "~/services/session.server";
 import { db } from "~/db/config.server";
-import { type User, users } from "~/db/schema.server";
+import { type Role, type User, users } from "~/db/schema.server";
 import { eq } from "drizzle-orm";
 import * as argon2 from "argon2";
-import { v7 as uuiv7 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { type SessionStorage } from "@remix-run/node";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -157,8 +157,9 @@ async function login(email: string, password: string): Promise<LoggedInUser> {
 export async function createUser(
   email: string,
   password: string,
+  role: Role,
 ): Promise<void> {
-  const id = uuiv7();
+  const id = uuidv7();
   const passwordHash = await argon2.hash(password);
-  await db.insert(users).values({ id, email, passwordHash });
+  await db.insert(users).values({ id, email, passwordHash, role });
 }

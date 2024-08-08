@@ -9,7 +9,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { SOUNDS_PATH } from "~/config/constants.server";
 import { Button } from "~/components/ui/button";
-import { Loader2, X } from "lucide-react";
+import { Loader2, MenuIcon, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import {
   type ChangeEvent,
@@ -26,6 +26,14 @@ import { useToast } from "~/components/ui/use-toast";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "~/components/ui/data-table";
 import { SimplePagination } from "~/components/ui/simple-pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 
 const PAGE_SIZE = 50;
 
@@ -40,7 +48,7 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await authenticator.isAuthenticated(request, {
+  const user = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
 
@@ -65,7 +73,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const onFirstPage = page === 1;
   const onLastPage = page === pageCount;
 
-  return json({ files, page, numOfSounds, pageCount, onFirstPage, onLastPage });
+  return json({
+    user,
+    files,
+    page,
+    numOfSounds,
+    pageCount,
+    onFirstPage,
+    onLastPage,
+  });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -177,7 +193,7 @@ const tableColumns: ColumnDef<Sound>[] = [
 ];
 
 export default function Index() {
-  const { files, page, pageCount, onFirstPage, onLastPage, numOfSounds } =
+  const { user, files, page, pageCount, onFirstPage, onLastPage, numOfSounds } =
     useLoaderData<typeof loader>();
 
   const uploadFetcher = useFetcher<typeof uploadAction>();
@@ -219,17 +235,37 @@ export default function Index() {
 
   return (
     <>
-      <div className="flex justify-between">
+      <header className="flex justify-between">
         <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
           <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
           Mememachine
         </h1>
-        <Form action="/logout" method="post">
+        {/*<Form action="/logout" method="post">
           <Button variant="secondary" type="submit">
             Logout
           </Button>
-        </Form>
-      </div>
+        </Form>*/}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="overflow-hidden">
+              <MenuIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Users</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Form action="/logout" method="post">
+                <Button variant="link" type="submit">
+                  Logout
+                </Button>
+              </Form>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
       <Separator className="my-4" />
       <uploadFetcher.Form
         ref={uploadFormRef}

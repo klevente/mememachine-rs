@@ -7,8 +7,9 @@ import {
 } from "@remix-run/react";
 import "./tailwind.css";
 import { Toaster } from "~/components/ui/toaster";
+import { type ReactNode } from "react";
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
