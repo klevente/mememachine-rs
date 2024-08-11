@@ -3,16 +3,12 @@ import { invitations, lower, users } from "~/db/schema.server";
 import { eq } from "drizzle-orm";
 import type { FieldErrors } from "react-hook-form";
 import { v7 as uuidv7 } from "uuid";
-import {
-  type CreateInvitationSchema,
-  type DeleteInvitationSchema,
-  INTENTS,
-  type ResendInvitationSchema,
-} from "~/routes/users/types";
+import type { DeleteSchema, InviteSchema } from "~/routes/users/types";
+import type { ReceivedValues } from "~/lib/utils";
 
 export async function createInvitation(
-  data: CreateInvitationSchema,
-  receivedValues: Record<any, any>,
+  data: InviteSchema,
+  receivedValues: ReceivedValues,
 ) {
   const lowercaseEmail = data.email.toLowerCase();
 
@@ -28,7 +24,7 @@ export async function createInvitation(
             type: "validate",
             message: "User already exists",
           },
-        } as FieldErrors<CreateInvitationSchema>;
+        } as FieldErrors<InviteSchema>;
         return {
           errors,
           defaultValues: receivedValues,
@@ -45,7 +41,7 @@ export async function createInvitation(
             type: "validate",
             message: "Invitation already exists",
           },
-        } as FieldErrors<CreateInvitationSchema>;
+        } as FieldErrors<InviteSchema>;
         return {
           errors,
           defaultValues: receivedValues,
@@ -65,38 +61,21 @@ export async function createInvitation(
         insertedInvitation.id,
       );
 
-      return { success: true, intent: INTENTS.createInvitation };
+      return { success: true };
     });
   } catch (e) {
     console.error("Error occurred while creating invitation", e);
-    return { success: false, intent: INTENTS.createInvitation };
+    return { success: false };
   }
 }
 
-export async function deleteInvitation(data: DeleteInvitationSchema) {
+export async function deleteInvitation(data: DeleteSchema) {
   try {
     await db.delete(invitations).where(eq(invitations.id, data.id));
-    return { success: true, intent: INTENTS.deleteInvitation };
+    return { success: true };
   } catch (e) {
     console.error("Error occurred while deleting invitation", e);
-    return { success: false, intent: INTENTS.deleteInvitation };
-  }
-}
-
-export async function resendInvitation(data: ResendInvitationSchema) {
-  try {
-    const invitation = await db.query.invitations.findFirst({
-      where: eq(invitations.id, data.id),
-    });
-    if (!invitation) {
-      return { success: false, message: `Invitation ${data.id} not found` };
-    }
-    await sendInvitationEmail(invitation.email, invitation.id);
-
-    return { success: true, intent: INTENTS.resendInvitation };
-  } catch (e) {
-    console.error("Error occurred while resending invitation email", e);
-    return { success: false, intent: INTENTS.resendInvitation };
+    return { success: false };
   }
 }
 

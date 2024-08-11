@@ -41,9 +41,7 @@
       "indexes": {
         "invitationEmailUniqueIndex": {
           "name": "invitationEmailUniqueIndex",
-          "columns": [
-            "lower(\"email\")"
-          ],
+          "columns": ["lower(\"email\")"],
           "isUnique": true
         }
       },
@@ -102,9 +100,7 @@
       "indexes": {
         "userEmailUniqueIndex": {
           "name": "userEmailUniqueIndex",
-          "columns": [
-            "lower(\"email\")"
-          ],
+          "columns": ["lower(\"email\")"],
           "isUnique": true
         }
       },

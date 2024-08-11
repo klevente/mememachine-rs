@@ -3,13 +3,14 @@ import {
   json,
   type LoaderFunctionArgs,
   type MetaFunction,
+  redirect,
 } from "@remix-run/node";
-import { Form, useFetcher, useLoaderData } from "@remix-run/react";
+import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { SOUNDS_PATH } from "~/config/constants.server";
 import { Button } from "~/components/ui/button";
-import { Loader2, MenuIcon, X } from "lucide-react";
+import { Loader2, LogOut, MenuIcon, Users, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import {
   type ChangeEvent,
@@ -27,6 +28,12 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "~/components/ui/data-table";
 import { SimplePagination } from "~/components/ui/simple-pagination";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -38,19 +45,15 @@ import {
 const PAGE_SIZE = 50;
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "Mememachine :: Admin Panel" },
-    {
-      name: "description",
-      content: "Admin panel for Mememachine, the Discord soundboard bot",
-    },
-  ];
+  return [{ title: "Mememachine :: Admin Panel" }];
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
+
+  const isAdmin = user.role === "admin";
 
   const url = new URL(request.url);
   const page = parseInt(url.searchParams.get("page") ?? "1", 10);
@@ -75,6 +78,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return json({
     user,
+    isAdmin,
     files,
     page,
     numOfSounds,
@@ -85,9 +89,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  await authenticator.isAuthenticated(request, {
+  const currentUser = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
+
+  if (currentUser.role !== "admin") {
+    throw redirect("/login");
+  }
 
   const data = await request.formData();
   const file = data.get("file") as string;
@@ -115,10 +123,12 @@ type Sound = {
 
 type SoundActionsProps = {
   sound: Sound;
+  isAdmin: boolean;
 };
 
 const SoundActions: FunctionComponent<SoundActionsProps> = ({
   sound: { name },
+  isAdmin,
 }) => {
   const fetcher = useFetcher<typeof action>();
   const { toast } = useToast();
@@ -146,19 +156,26 @@ const SoundActions: FunctionComponent<SoundActionsProps> = ({
   const isDeleting = fetcher.state !== "idle";
   return (
     <fetcher.Form method="post">
-      <Button
-        name="file"
-        value={name}
-        variant="ghost"
-        size="icon"
-        disabled={isDeleting}
-      >
-        {isDeleting ? (
-          <Loader2 className="animate-spin text-red-500" />
-        ) : (
-          <X className="text-red-500" />
-        )}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              name="file"
+              value={name}
+              variant="ghost"
+              size="icon"
+              disabled={!isAdmin || isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="animate-spin text-red-500" />
+              ) : (
+                <X className="text-red-500" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete sound</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </fetcher.Form>
   );
 };
@@ -186,15 +203,24 @@ const tableColumns: ColumnDef<Sound>[] = [
   {
     accessorKey: "actions",
     header: "Actions",
-    cell: ({ row }) => {
-      return <SoundActions sound={row.original} />;
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as { isAdmin: boolean };
+      return <SoundActions sound={row.original} isAdmin={meta.isAdmin} />;
     },
   },
 ];
 
 export default function Index() {
-  const { user, files, page, pageCount, onFirstPage, onLastPage, numOfSounds } =
-    useLoaderData<typeof loader>();
+  const {
+    user,
+    isAdmin,
+    files,
+    page,
+    pageCount,
+    onFirstPage,
+    onLastPage,
+    numOfSounds,
+  } = useLoaderData<typeof loader>();
 
   const uploadFetcher = useFetcher<typeof uploadAction>();
 
@@ -236,15 +262,12 @@ export default function Index() {
   return (
     <>
       <header className="flex justify-between">
-        <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
-          <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
-          Mememachine
-        </h1>
-        {/*<Form action="/logout" method="post">
-          <Button variant="secondary" type="submit">
-            Logout
-          </Button>
-        </Form>*/}
+        <Link to="/">
+          <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
+            <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
+            Mememachine
+          </h1>
+        </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden">
@@ -252,19 +275,39 @@ export default function Index() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              <span>{user.email}</span>
+            </DropdownMenuLabel>
+            {isAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <Link to="/users">
+                  <DropdownMenuItem>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Users</span>
+                  </DropdownMenuItem>
+                </Link>
+              </>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Users</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Form action="/logout" method="post">
-                <Button variant="link" type="submit">
-                  Logout
-                </Button>
-              </Form>
-            </DropdownMenuItem>
+            <Link to="/logout">
+              <DropdownMenuItem>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuContent>
         </DropdownMenu>
+        {/*<NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuTrigger>Item One</NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <NavigationMenuLink>Link</NavigationMenuLink>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>*/}
       </header>
       <Separator className="my-4" />
       <uploadFetcher.Form
@@ -298,6 +341,9 @@ export default function Index() {
         <DataTable
           columns={tableColumns}
           data={files.map((file) => ({ name: file }))}
+          meta={{
+            isAdmin,
+          }}
         />
         <SimplePagination
           numOfItems={numOfSounds}

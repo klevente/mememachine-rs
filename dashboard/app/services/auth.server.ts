@@ -1,6 +1,6 @@
 import { type AuthenticateOptions, Authenticator, Strategy } from "remix-auth";
 import { sessionStorage } from "~/services/session.server";
-import { db } from "~/db/config.server";
+import { db, type Tx } from "~/db/config.server";
 import { type Role, type User, users } from "~/db/schema.server";
 import { eq } from "drizzle-orm";
 import * as argon2 from "argon2";
@@ -13,7 +13,7 @@ import type { FieldValues, NonUndefined, Resolver } from "react-hook-form";
 import type { StrategyVerifyCallback } from "remix-auth/build/strategy";
 import { loginSchema } from "~/services/auth-schema";
 
-export type LoggedInUser = Pick<User, "id" | "email">;
+export type LoggedInUser = Pick<User, "id" | "email" | "role">;
 
 type RemixHookReturn<T extends FieldValues> = Awaited<
   ReturnType<typeof getValidatedFormData<T>>
@@ -131,6 +131,7 @@ async function login(email: string, password: string): Promise<LoggedInUser> {
       id: true,
       email: true,
       passwordHash: true,
+      role: true,
     },
     where: eq(users.email, email),
   });
@@ -158,8 +159,9 @@ export async function createUser(
   email: string,
   password: string,
   role: Role,
+  tx: Tx = db,
 ): Promise<void> {
   const id = uuidv7();
   const passwordHash = await argon2.hash(password);
-  await db.insert(users).values({ id, email, passwordHash, role });
+  await tx.insert(users).values({ id, email, passwordHash, role });
 }

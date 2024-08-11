@@ -7,9 +7,16 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Button } from "~/components/ui/button";
-import { Loader2, MailPlus, MenuIcon, X } from "lucide-react";
+import {
+  ClipboardCheck,
+  ClipboardCopy,
+  Loader2,
+  MenuIcon,
+  X,
+} from "lucide-react";
 import {
   Form,
+  Link,
   useFetcher,
   useLoaderData,
   useNavigation,
@@ -20,6 +27,8 @@ import {
   type ActionFunctionArgs,
   json,
   type LoaderFunctionArgs,
+  type MetaFunction,
+  redirect,
 } from "@remix-run/node";
 import { db } from "~/db/config.server";
 import { invitations, type Role, users } from "~/db/schema.server";
@@ -29,25 +38,30 @@ import { Input } from "~/components/ui/input";
 import { getValidatedFormData, useRemixForm } from "remix-hook-form";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "~/components/ui/data-table";
-import { type FunctionComponent, useEffect } from "react";
+import { type FunctionComponent, useEffect, useState } from "react";
 import { useToast } from "~/components/ui/use-toast";
+import { type InviteSchema, inviteSchemaResolver } from "~/routes/users/types";
+import { createInvitation } from "~/routes/users/service.server";
 import {
-  CreateInvitationSchema,
-  INTENTS,
-  inviteSchemaResolver,
-  type UsersSchema,
-  usersSchemaResolver,
-} from "~/routes/users/types";
-import {
-  createInvitation,
-  deleteInvitation,
-  resendInvitation,
-} from "~/routes/users/service";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+import { action as deleteAction } from "../users.delete";
+
+export const meta: MetaFunction = () => {
+  return [{ title: "Mememachine :: Admin Panel :: Users" }];
+};
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const currentUser = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
+
+  if (currentUser.role !== "admin") {
+    return redirect("/");
+  }
 
   const [existingUsers, existingInvitations] = await Promise.all([
     db.query.users.findMany({
@@ -66,23 +80,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
+  const currentUser = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  if (currentUser.role !== "admin") {
+    return redirect("/");
+  }
+
   const { errors, data, receivedValues } =
-    await getValidatedFormData<UsersSchema>(request, usersSchemaResolver);
+    await getValidatedFormData<InviteSchema>(request, inviteSchemaResolver);
 
   if (errors) {
     return json({ errors, defaultValues: receivedValues });
   }
 
-  switch (data.intent) {
-    case INTENTS.createInvitation:
-      return json(await createInvitation(data, receivedValues));
-    case INTENTS.deleteInvitation:
-      return json(await deleteInvitation(data));
-    case INTENTS.resendInvitation:
-      return json(await resendInvitation(data));
-    default:
-      throw new Error("nonexistent intent");
-  }
+  return json(await createInvitation(data, receivedValues));
 }
 
 type InvitationActionsProps = {
@@ -92,7 +105,7 @@ type InvitationActionsProps = {
 const InvitationActions: FunctionComponent<InvitationActionsProps> = ({
   invitation,
 }) => {
-  const fetcher = useFetcher<typeof action>();
+  const fetcher = useFetcher<typeof deleteAction>();
   const { toast } = useToast();
 
   const isSubmitting = fetcher.state !== "idle";
@@ -103,65 +116,71 @@ const InvitationActions: FunctionComponent<InvitationActionsProps> = ({
       fetcher.data
     ) {
       if (fetcher.data.success) {
-        if (fetcher.data.intent === INTENTS.deleteInvitation) {
-          toast({
-            title: "Invitation deleted!",
-            description: "Invitation has been deleted!",
-          });
-        } else if (fetcher.data.intent === INTENTS.resendInvitation) {
-          toast({
-            title: "Invitation resent!",
-            description: "Invitation has been resent!",
-          });
-        }
+        toast({
+          title: "Invitation deleted!",
+          description: "Invitation has been deleted!",
+        });
       } else {
-        if (fetcher.data.intent === INTENTS.deleteInvitation) {
-          toast({
-            variant: "destructive",
-            title: "Error while deleting invitation",
-            description: "Error while deleting invitation",
-          });
-        } else if (fetcher.data.intent === INTENTS.resendInvitation) {
-          toast({
-            variant: "destructive",
-            title: "Error while resending invitation!",
-            description: "Error while resending invitation",
-          });
-        }
+        toast({
+          variant: "destructive",
+          title: "Error while deleting invitation",
+          description: "Error while deleting invitation.",
+        });
       }
     }
   }, [toast, fetcher.state, fetcher.data]);
 
+  const [copied, setCopied] = useState(false);
+
+  const onCopyButtonClicked = async () => {
+    const link = `${window.location.origin}/register?token=${invitation.id}`;
+    await navigator.clipboard.writeText(link);
+    toast({
+      title: "Link copied to clipboard!",
+      description: "Send it to the person you would like to register.",
+    });
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1000);
+  };
+
   return (
     <div className="flex justify-end gap-1">
-      <fetcher.Form method="post">
-        <input type="hidden" name="intent" value={INTENTS.resendInvitation} />
-        <Button
-          name="id"
-          value={invitation.id}
-          variant="ghost"
-          size="icon"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? <Loader2 className="animate-spin" /> : <MailPlus />}
-        </Button>
-      </fetcher.Form>
-      <fetcher.Form method="post">
-        <input type="hidden" name="intent" value={INTENTS.deleteInvitation} />
-        <Button
-          name="id"
-          value={invitation.id}
-          variant="ghost"
-          size="icon"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <Loader2 className="animate-spin text-red-500" />
-          ) : (
-            <X className="text-red-500" />
-          )}
-        </Button>
-      </fetcher.Form>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCopyButtonClicked}
+              disabled={copied}
+            >
+              {copied ? <ClipboardCheck /> : <ClipboardCopy />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Copy link to clipboard</TooltipContent>
+        </Tooltip>
+        <fetcher.Form method="post" action="delete">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                name="id"
+                value={invitation.id}
+                variant="ghost"
+                size="icon"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="animate-spin text-red-500" />
+                ) : (
+                  <X className="text-red-500" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Revoke invitation</TooltipContent>
+          </Tooltip>
+        </fetcher.Form>
+      </TooltipProvider>
     </div>
   );
 };
@@ -178,6 +197,14 @@ const invitationTableColumns: ColumnDef<InvitationRow>[] = [
     cell: ({ row }) => {
       const email = row.original.email;
       return <div>{email}</div>;
+    },
+  },
+  {
+    accessorKey: "id",
+    header: "ID",
+    cell: ({ row }) => {
+      const id = row.original.id;
+      return <div>{id}</div>;
     },
   },
   {
@@ -222,7 +249,7 @@ export default function Route() {
     formState: { errors, isSubmitSuccessful },
     register,
     reset,
-  } = useRemixForm<CreateInvitationSchema>({
+  } = useRemixForm<InviteSchema>({
     mode: "onBlur",
     resolver: inviteSchemaResolver,
   });
@@ -240,10 +267,12 @@ export default function Route() {
   return (
     <>
       <header className="flex justify-between">
-        <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
-          <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
-          Mememachine
-        </h1>
+        <Link to="/">
+          <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
+            <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
+            Mememachine
+          </h1>
+        </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden">
@@ -272,10 +301,6 @@ export default function Route() {
         onSubmit={handleSubmit}
         className="flex items-end gap-4 mb-4"
       >
-        <input
-          type="hidden"
-          {...register("intent", { value: INTENTS.createInvitation })}
-        />
         <div className="flex-grow">
           <FormLabel htmlFor="email" error={errors.email}>
             Email

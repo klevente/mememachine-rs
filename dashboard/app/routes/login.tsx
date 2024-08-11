@@ -4,7 +4,7 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "@remix-run/node";
-import { Form, useNavigation } from "@remix-run/react";
+import { Form, useNavigation, useSearchParams } from "@remix-run/react";
 import {
   authenticator,
   RemixHookFormValidationError,
@@ -27,16 +27,10 @@ import {
   type LoginFormFields,
   loginSchemaResolver,
 } from "~/services/auth-schema";
-import { Loader2 } from "lucide-react";
+import { ListChecks, Loader2 } from "lucide-react";
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "Mememachine :: Login" },
-    {
-      name: "description",
-      content: "Admin panel login for Mememachine, the Discord soundboard bot",
-    },
-  ];
+  return [{ title: "Mememachine :: Login" }];
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -71,6 +65,9 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Login() {
+  const [params] = useSearchParams();
+  const registeredEmail = params.get("email") ?? undefined;
+
   const {
     handleSubmit,
     formState: { errors },
@@ -78,6 +75,9 @@ export default function Login() {
   } = useRemixForm<LoginFormFields>({
     mode: "onSubmit",
     resolver: loginSchemaResolver,
+    defaultValues: {
+      email: registeredEmail,
+    },
   });
 
   const navigation = useNavigation();
@@ -94,6 +94,19 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {registeredEmail && (
+            <div className="flex items-center space-x-4 rounded-md border p-4">
+              <ListChecks />
+              <div className="flex-1 space-y-1">
+                <p className="text-sm font-medium leading-none">
+                  You have successfully registered!
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Now, log in to finish setup.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="grid gap-2">
             <FormLabel htmlFor="email" error={errors.email}>
               Email

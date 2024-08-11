@@ -7,3 +7,7 @@ import { env } from "~/config/env.server";
 export const db = drizzle(new Database(env.DATABASE_PATH), {
   schema,
 });
+
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export type Tx = Transaction | typeof db;
