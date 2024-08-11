@@ -10,7 +10,7 @@ export async function seedAdminUser() {
     console.log("Route already exist, not adding admin user again.");
     return;
   }
-  console.log("No users in DB, creating admin user...");
+  console.log("No _auth.users in DB, creating admin user...");
   await createUser(env.ADMIN_EMAIL, env.ADMIN_PASSWORD, "admin");
   console.log("Admin user successfully created!");
 }

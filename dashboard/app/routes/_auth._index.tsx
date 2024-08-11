@@ -5,12 +5,12 @@ import {
   type MetaFunction,
   redirect,
 } from "@remix-run/node";
-import { Link, useFetcher, useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { SOUNDS_PATH } from "~/config/constants.server";
 import { Button } from "~/components/ui/button";
-import { Loader2, LogOut, MenuIcon, Users, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import {
   type ChangeEvent,
@@ -20,7 +20,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { Separator } from "~/components/ui/separator";
 import { authenticator } from "~/services/auth.server";
 import { action as uploadAction } from "./upload";
 import { useToast } from "~/components/ui/use-toast";
@@ -33,14 +32,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 
 const PAGE_SIZE = 50;
 
@@ -77,7 +68,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const onLastPage = page === pageCount;
 
   return json({
-    user,
     isAdmin,
     files,
     page,
@@ -212,7 +202,6 @@ const tableColumns: ColumnDef<Sound>[] = [
 
 export default function Index() {
   const {
-    user,
     isAdmin,
     files,
     page,
@@ -260,56 +249,7 @@ export default function Index() {
   const isUploading = uploadFetcher.state !== "idle";
 
   return (
-    <>
-      <header className="flex justify-between">
-        <Link to="/">
-          <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
-            <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
-            Mememachine
-          </h1>
-        </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="overflow-hidden">
-              <MenuIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>
-              <span>{user.email}</span>
-            </DropdownMenuLabel>
-            {isAdmin && (
-              <>
-                <DropdownMenuSeparator />
-                <Link to="/users">
-                  <DropdownMenuItem>
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>Users</span>
-                  </DropdownMenuItem>
-                </Link>
-              </>
-            )}
-            <DropdownMenuSeparator />
-            <Link to="/logout">
-              <DropdownMenuItem>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </Link>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        {/*<NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Item One</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <NavigationMenuLink>Link</NavigationMenuLink>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>*/}
-      </header>
-      <Separator className="my-4" />
+    <article>
       <uploadFetcher.Form
         ref={uploadFormRef}
         action="upload"
@@ -354,6 +294,6 @@ export default function Index() {
           url="/"
         />
       </div>
-    </>
+    </article>
   );
 }

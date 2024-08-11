@@ -3,7 +3,7 @@ import { invitations, lower, users } from "~/db/schema.server";
 import { eq } from "drizzle-orm";
 import type { FieldErrors } from "react-hook-form";
 import { v7 as uuidv7 } from "uuid";
-import type { DeleteSchema, InviteSchema } from "~/routes/users/types";
+import type { DeleteSchema, InviteSchema } from "~/routes/_auth.users/types";
 import type { ReceivedValues } from "~/lib/utils";
 
 export async function createInvitation(

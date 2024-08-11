@@ -1,8 +1,11 @@
 import { type ActionFunctionArgs, json, redirect } from "@remix-run/node";
 import { authenticator } from "~/services/auth.server";
-import { deleteInvitation } from "~/routes/users/service.server";
+import { deleteInvitation } from "~/routes/_auth.users/service.server";
 import { getValidatedFormData } from "remix-hook-form";
-import { type DeleteSchema, deleteSchemaResolver } from "~/routes/users/types";
+import {
+  type DeleteSchema,
+  deleteSchemaResolver,
+} from "~/routes/_auth.users/types";
 
 export async function action({ request }: ActionFunctionArgs) {
   const currentUser = await authenticator.isAuthenticated(request, {

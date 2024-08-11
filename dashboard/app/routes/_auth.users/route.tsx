@@ -1,22 +1,7 @@
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { Button } from "~/components/ui/button";
-import {
-  ClipboardCheck,
-  ClipboardCopy,
-  Loader2,
-  MenuIcon,
-  X,
-} from "lucide-react";
+import { ClipboardCheck, ClipboardCopy, Loader2, X } from "lucide-react";
 import {
   Form,
-  Link,
   useFetcher,
   useLoaderData,
   useNavigation,
@@ -40,8 +25,11 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "~/components/ui/data-table";
 import { type FunctionComponent, useEffect, useState } from "react";
 import { useToast } from "~/components/ui/use-toast";
-import { type InviteSchema, inviteSchemaResolver } from "~/routes/users/types";
-import { createInvitation } from "~/routes/users/service.server";
+import {
+  type InviteSchema,
+  inviteSchemaResolver,
+} from "~/routes/_auth.users/types";
+import { createInvitation } from "~/routes/_auth.users/service.server";
 import {
   Tooltip,
   TooltipContent,
@@ -242,7 +230,7 @@ const userTableColumns: ColumnDef<UserRow>[] = [
 ];
 
 export default function Route() {
-  const { currentUser, users, invitations } = useLoaderData<typeof loader>();
+  const { users, invitations } = useLoaderData<typeof loader>();
 
   const {
     handleSubmit,
@@ -265,36 +253,7 @@ export default function Route() {
   }, [toast, reset, isSubmitSuccessful]);
 
   return (
-    <>
-      <header className="flex justify-between">
-        <Link to="/">
-          <h1 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
-            <img src="/favicon.ico" alt="icon" className="w-8 img-pixelated" />{" "}
-            Mememachine
-          </h1>
-        </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="overflow-hidden">
-              <MenuIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{currentUser.email}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Users</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Form action="/logout" method="post">
-                <Button variant="link" type="submit">
-                  Logout
-                </Button>
-              </Form>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-      <Separator className="my-4" />
+    <article>
       <h3 className="font-bold">Invitations</h3>
       <Form
         method="post"
@@ -328,6 +287,6 @@ export default function Route() {
       <Separator className="my-4" />
       <h3 className="font-bold">Users</h3>
       <DataTable columns={userTableColumns} data={users} />
-    </>
+    </article>
   );
 }
