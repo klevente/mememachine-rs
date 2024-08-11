@@ -5,13 +5,21 @@ Dockerfile
 # Git files
 .git
 .github
-.gitignore
+**/.gitignore
 LICENSE
 README.md
 
 # Cargo files
-**/*.rs.bk
-/target
+bot/*.rs.bk
+bot/target
+
+# Node files
+dashboard/node_modules/
+dashboard/.cache
+dashboard/public/build
+dashboard/build
+dashboard/public/sounds
+
 
 # Fly files
 fly.toml
@@ -22,3 +30,7 @@ fly.toml
 
 # Env
 .env
+
+# Random
+.DS_Store
+*.log

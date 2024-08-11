@@ -1,10 +1,7 @@
 use crate::{handler::EndEventHandler, util::check_msg, util::get_sounds, ConfigStore};
 use rand::Rng;
 use serenity::{client::Context, model::channel::Message};
-use songbird::{
-    input::{self},
-    Event, TrackEvent,
-};
+use songbird::{input::File, Event, TrackEvent};
 
 const MAX_MSG_LEN: usize = 2000;
 
@@ -63,16 +60,18 @@ pub async fn help_command(ctx: Context, msg: Message) {
 async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
     let config = ctx.data.read().await.get::<ConfigStore>().cloned().unwrap();
 
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let (guild_id, channel_id) = {
+        let guild = msg.guild(&ctx.cache).unwrap();
+        let channel_id = guild
+            .voice_states
+            .get(&msg.author.id)
+            .and_then(|voice_state| voice_state.channel_id);
 
-    let channel_id = guild
-        .voice_states
-        .get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id);
+        (guild.id, channel_id)
+    };
 
     let Some(connect_to) = channel_id else {
-        check_msg(msg.reply(ctx, "You're not in a voice channel!").await);
+        check_msg(msg.reply(&ctx, "You're not in a voice channel!").await);
         return;
     };
 
@@ -80,21 +79,11 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
 
     if !file_path.exists() {
         tracing::info!("No sound was found with name '{file_name}'");
-        check_msg(msg.reply(ctx, format!("Unknown sound: {file_name}")).await);
+        check_msg(msg.reply(&ctx, format!("Unknown sound: {file_name}")).await);
         return;
     }
 
-    let sound_file = match input::ffmpeg(&file_path).await {
-        Ok(sound_file) => sound_file,
-        Err(e) => {
-            tracing::error!("Unexpected error occurred during sound loading: {e}");
-            check_msg(
-                msg.reply(ctx, format!("Unexpected error occurred: {e}"))
-                    .await,
-            );
-            return;
-        }
-    };
+    let sound_file = File::new(file_path.clone());
 
     let manager = songbird::get(&ctx)
         .await
@@ -107,20 +96,22 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
         return;
     }
 
-    let (handler_lock, success_reader) = manager.join(guild_id, connect_to).await;
-
-    if let Err(e) = success_reader {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, format!("Error joining the channel, error: {e}",))
-                .await,
-        );
-        return;
-    }
+    let handler_lock = match manager.join(guild_id, connect_to).await {
+        Ok(handler_lock) => handler_lock,
+        Err(e) => {
+            check_msg(
+                msg.channel_id
+                    .say(&ctx.http, format!("Error joining the channel, error: {e}"))
+                    .await,
+            );
+            return;
+        }
+    };
 
     let mut handler = handler_lock.lock().await;
 
-    let sound = handler.play_source(sound_file);
+    let sound = handler.play_input(sound_file.into());
+
     let _ = sound.set_volume(1.0);
     tracing::info!("Playing sound: '{}'", file_path.display());
 

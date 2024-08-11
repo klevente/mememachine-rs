@@ -17,32 +17,53 @@ jobs:
   bump:
     name: Bump version
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
 
-      - name: Install Toolchain
+      - name: Install Rust Toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           override: true
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install deps
+        run: npm ci
+        working-directory: ./dashboard
+
       - name: Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bot
 
       - name: Install cargo-bump
         run: cargo install cargo-bump
 
       - name: Bump Cargo version
         run: cargo-bump bump ${{ github.event.inputs.version }}
+        working-directory: ./bot
 
       - name: Bump Cargo.lock
         run: cargo build
+        working-directory: ./bot
 
       - name: Get latest version
         id: get_version
         run: echo "VERSION=$(cargo pkgid | cut -d# -f2)" >> $GITHUB_OUTPUT
+        working-directory: ./bot
+
+      - name: Bump npm version
+        run: npm version ${{ github.event.inputs.version }}
+        working-directory: ./dashboard
 
       - name: Create bump PR
         uses: peter-evans/create-pull-request@v5
