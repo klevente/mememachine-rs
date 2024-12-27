@@ -1,44 +1,75 @@
-use crate::{handler::EndEventHandler, util::check_msg, util::get_sounds, ConfigStore};
+use crate::{
+    handler::EndEventHandler,
+    util::{check_msg, get_sounds},
+    ConfigStore, Db,
+};
+use anyhow::Context as AnyhowContext;
 use rand::Rng;
-use serenity::{client::Context, model::channel::Message};
+use serenity::{all::GuildId, client::Context, model::channel::Message};
 use songbird::{input::File, Event, TrackEvent};
 
 const MAX_MSG_LEN: usize = 2000;
 
 #[tracing::instrument(skip(ctx, msg))]
-pub async fn sound_command(ctx: Context, msg: Message) {
-    tracing::info!("Sound command was called with message {:?}", msg);
+pub async fn sound_command(ctx: Context, msg: Message) -> anyhow::Result<()> {
+    tracing::info!("Sound command was called with message {msg:?}");
     let (_, file_name) = msg.content.split_at(1);
     let file_name = file_name.to_owned();
-    play_sound(ctx, msg, &file_name).await;
+    let result = play_sound(ctx.clone(), msg, &file_name).await;
+
+    match result {
+        Err(PlaySoundError::NotFound(_)) => return Ok(()),
+        Err(e) => return Err(e.into()),
+        _ => (),
+    };
+
+    let db = ctx.data.read().await.get::<Db>().cloned().unwrap();
+    tokio::spawn(async move {
+        let res = record_statistic(db, file_name, false).await;
+        if let Err(e) = res {
+            tracing::error!("Error inserting sound play into database: {e}");
+        }
+    });
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(ctx, msg))]
-pub async fn random_command(ctx: Context, msg: Message) {
+pub async fn random_command(ctx: Context, msg: Message) -> anyhow::Result<()> {
     let file_name = {
         let config = ctx.data.read().await.get::<ConfigStore>().cloned().unwrap();
 
-        let files = get_sounds(&config.sounds_path).unwrap();
+        let files = get_sounds(&config.sounds_path).context("Error reading sound files")?;
         if files.is_empty() {
             check_msg(
                 msg.reply(ctx, "There are no sound files to choose from! Please add some to the sounds directory.")
                     .await,
             );
-            return;
+            return Ok(());
         }
         let mut rng = rand::thread_rng();
         let idx = rng.gen_range(0..files.len());
         files[idx].clone()
     };
     tracing::info!("Random command in guild #{}, chosen file: '{file_name}'", 0);
-    play_sound(ctx, msg, &file_name).await;
+    play_sound(ctx.clone(), msg, &file_name).await?;
+
+    let db = ctx.data.read().await.get::<Db>().cloned().unwrap();
+    tokio::spawn(async move {
+        let res = record_statistic(db, file_name, true).await;
+        if let Err(e) = res {
+            tracing::error!("Error inserting sound play into database: {e}");
+        }
+    });
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(ctx, msg))]
-pub async fn help_command(ctx: Context, msg: Message) {
+pub async fn help_command(ctx: Context, msg: Message) -> anyhow::Result<()> {
     let config = ctx.data.read().await.get::<ConfigStore>().cloned().unwrap();
 
-    let files = get_sounds(&config.sounds_path).unwrap();
+    let files = get_sounds(&config.sounds_path).context("Error reading sound files")?;
 
     let mut messages = vec!["".to_string()];
 
@@ -54,10 +85,24 @@ pub async fn help_command(ctx: Context, msg: Message) {
     for content in messages {
         check_msg(msg.channel_id.say(&ctx.http, content).await);
     }
+
+    Ok(())
+}
+
+#[derive(thiserror::Error, Debug)]
+enum PlaySoundError {
+    #[error("No sound was found with name '{0}'")]
+    NotFound(String),
+    #[error("Bot is already in a voice channel for guild #{0}")]
+    InVoiceChannelAlready(GuildId),
+    #[error("You're not in a voice channel!")]
+    NoVoiceChannel,
+    #[error("Unexpected error while joining channel: {0}")]
+    JoinError(#[from] songbird::error::JoinError),
 }
 
 #[tracing::instrument(skip(ctx, msg))]
-async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
+async fn play_sound(ctx: Context, msg: Message, file_name: &String) -> Result<(), PlaySoundError> {
     let config = ctx.data.read().await.get::<ConfigStore>().cloned().unwrap();
 
     let (guild_id, channel_id) = {
@@ -72,7 +117,7 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
 
     let Some(connect_to) = channel_id else {
         check_msg(msg.reply(&ctx, "You're not in a voice channel!").await);
-        return;
+        return Err(PlaySoundError::NoVoiceChannel);
     };
 
     let file_path = config.sounds_path.join(format!("{file_name}.mp3"));
@@ -80,7 +125,7 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
     if !file_path.exists() {
         tracing::info!("No sound was found with name '{file_name}'");
         check_msg(msg.reply(&ctx, format!("Unknown sound: {file_name}")).await);
-        return;
+        return Err(PlaySoundError::NotFound(file_name.clone()));
     }
 
     let sound_file = File::new(file_path.clone());
@@ -93,7 +138,7 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
     let has_handler = manager.get(guild_id).is_some();
     if has_handler {
         tracing::info!("Bot is already in a voice channel for guild #{guild_id}, returning");
-        return;
+        return Err(PlaySoundError::InVoiceChannelAlready(guild_id));
     }
 
     let handler_lock = match manager.join(guild_id, connect_to).await {
@@ -104,7 +149,7 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
                     .say(&ctx.http, format!("Error joining the channel, error: {e}"))
                     .await,
             );
-            return;
+            return Err(e.into());
         }
     };
 
@@ -120,4 +165,21 @@ async fn play_sound(ctx: Context, msg: Message, file_name: &String) {
         EndEventHandler::new(manager.clone(), guild_id, tracing::Span::current()),
     );
     tracing::info!("Added track end event listener");
+    Ok(())
+}
+
+#[tracing::instrument(skip(db))]
+async fn record_statistic(
+    db: async_sqlite::Pool,
+    file_name: String,
+    is_random: bool,
+) -> Result<(), async_sqlite::Error> {
+    db.conn(move |c| {
+        c.execute(
+            "INSERT INTO sound_plays (sound_name, is_random) VALUES (?1, ?2)",
+            (file_name, is_random),
+        )
+    })
+    .await
+    .map(|_| ())
 }
