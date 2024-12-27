@@ -1,4 +1,7 @@
-use crate::commands::{help_command, random_command, sound_command};
+use crate::{
+    commands::{help_command, random_command, sound_command},
+    util::check_msg,
+};
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
@@ -21,10 +24,25 @@ impl EventHandler for Handler {
         }
         let (_, message) = msg.content.split_at(1);
 
-        match message {
+        let channel_id_for_error_handling = msg.channel_id;
+        let ctx_for_error_handling = ctx.clone();
+
+        let result = match message {
             "list" | "help" => help_command(ctx, msg).await,
             "random" => random_command(ctx, msg).await,
             _ => sound_command(ctx, msg).await,
+        };
+
+        if let Err(e) = result {
+            tracing::error!("Error occurred while processing message: {e:?}");
+            check_msg(
+                channel_id_for_error_handling
+                    .say(
+                        &ctx_for_error_handling.http,
+                        format!("An unexpected error occurred: {e}"),
+                    )
+                    .await,
+            );
         }
     }
 

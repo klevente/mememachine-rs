@@ -1,6 +1,7 @@
 import { SQL, sql } from "drizzle-orm";
 import {
   AnySQLiteColumn,
+  integer,
   sqliteTable,
   text,
   uniqueIndex,
@@ -49,6 +50,14 @@ export const invitations = sqliteTable(
     ),
   }),
 );
+
+export const soundPlays = sqliteTable("sound_plays", {
+  soundName: text("sound_name").notNull(),
+  isRandom: integer("is_random", { mode: "boolean" }),
+  recordedAt: text("recorded_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
 
 export type User = typeof users.$inferInsert;
 export type Role = User["role"];
