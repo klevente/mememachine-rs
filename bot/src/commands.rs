@@ -1,12 +1,12 @@
 use crate::{
+    ConfigStore, Db,
     handler::EndEventHandler,
     util::{check_msg, get_sounds},
-    ConfigStore, Db,
 };
 use anyhow::Context as AnyhowContext;
 use rand::Rng;
 use serenity::{all::GuildId, client::Context, model::channel::Message};
-use songbird::{input::File, Event, TrackEvent};
+use songbird::{Event, TrackEvent, input::File};
 
 const MAX_MSG_LEN: usize = 2000;
 
@@ -47,8 +47,8 @@ pub async fn random_command(ctx: Context, msg: Message) -> anyhow::Result<()> {
             );
             return Ok(());
         }
-        let mut rng = rand::thread_rng();
-        let idx = rng.gen_range(0..files.len());
+        let mut rng = rand::rng();
+        let idx = rng.random_range(0..files.len());
         files[idx].clone()
     };
     tracing::info!("Random command in guild #{}, chosen file: '{file_name}'", 0);

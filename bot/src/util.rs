@@ -1,4 +1,4 @@
-use serenity::{model::channel::Message, Result as SerenityResult};
+use serenity::{Result as SerenityResult, model::channel::Message};
 use std::path::Path;
 
 /// Checks that a message successfully sent; if not, then logs why to stdout.
