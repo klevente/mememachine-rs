@@ -38,11 +38,17 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Install dependencies
+      - name: Install dependencies for Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt update
           sudo apt install -y libopus-dev
+
+      - name: Install older CMake for Mac (needed to build audiopus_sys)
+        if: runner.os == 'macOS'
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.27.7'
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
