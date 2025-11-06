@@ -15,7 +15,7 @@ jobs:
           echo "TAG=$(curl -s ${{ github.api_url }}/repos/${{ github.repository }}/releases/latest | jq '.tag_name' | sed 's/\"//g')" >> $GITHUB_OUTPUT
 
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           ref: ${{ steps.release-tag.outputs.TAG }}
 
