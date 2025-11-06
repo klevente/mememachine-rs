@@ -77,12 +77,8 @@ impl VoiceEventHandler for EndEventHandler {
         );
         let has_handler = self.manager.get(self.guild_id).is_some();
 
-        if has_handler {
-            if let Err(e) = self.manager.remove(self.guild_id).await {
-                tracing::error!(
-                    "Unexpected error occurred while trying to leave voice channel: {e}"
-                );
-            }
+        if has_handler && let Err(e) = self.manager.remove(self.guild_id).await {
+            tracing::error!("Unexpected error occurred while trying to leave voice channel: {e}");
         }
 
         None

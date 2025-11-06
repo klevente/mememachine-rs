@@ -1,7 +1,7 @@
 [package]
 name = "mememachine-rs"
 version = "0.1.9"
-edition = "2021"
+edition = "2024"
 authors = ["klevente"]
 description = "A Discord soundboard bot"
 repository = "https://github.com/klevente/mememachine-rs"
@@ -9,27 +9,27 @@ license = "MIT"
 keywords = ["discord", "soundboard", "bot"]
 
 [dependencies]
-anyhow = "1.0"
-async-sqlite = "0.3"
-rand = "0.8"
-songbird = "0.4.3"
-thiserror = "2.0"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-tracing-futures = "0.2"
-uuid = { version = "1.3", features = ["v4"] }
+anyhow = "1.0.100"
+async-sqlite = "0.5.3"
+rand = "0.9.2"
+songbird = "0.5.0"
+thiserror = "2.0.17"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.20"
+tracing-futures = "0.2.5"
+uuid = { version = "1.18.1", features = ["v4"] }
 
 [dependencies.serenity]
-version = "0.12"
+version = "0.12.4"
 features = ["cache", "voice", "http", "rustls_backend"]
 default-features = false
 
 [dependencies.symphonia]
-version = "0.5.4"
+version = "0.5.5"
 features = ["mp3"]
 
 [dependencies.tokio]
-version = "1.39"
+version = "1.48.0"
 features = ["macros", "rt-multi-thread"]
 
 [profile.release]
