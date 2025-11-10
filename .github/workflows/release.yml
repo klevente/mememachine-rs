@@ -63,7 +63,7 @@ jobs:
           args: --manifest-path bot/Cargo.toml --release --locked --target ${{ matrix.arch.target }}
 
       - name: Package
-        uses: vimtor/action-zip@v1.1
+        uses: vimtor/action-zip@v1.2
         with:
           files: bot/target/${{ matrix.arch.target }}/release/mememachine-rs${{ matrix.arch.suffix }}
           dest: mememachine-rs-${{ matrix.arch.target }}.zip
