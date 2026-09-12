@@ -4,7 +4,7 @@ use crate::{
     util::{check_msg, get_sounds},
 };
 use anyhow::Context as AnyhowContext;
-use rand::Rng;
+use rand::RngExt;
 use serenity::{all::GuildId, client::Context, model::channel::Message};
 use songbird::{Event, TrackEvent, input::File};
 
